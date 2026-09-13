@@ -1326,3 +1326,11 @@ textarea {
 .task-card span, .task-card small { color: var(--text-secondary); }
 .task-card-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 @media (max-width: 700px) { .task-card { flex-direction: column; } .task-card-actions { justify-content: flex-start; } }
+.task-composer { margin-top: 18px; padding: 18px; border: 1px solid var(--border-light); border-radius: var(--radius-lg); background: var(--bg-tertiary); }
+.task-composer h2 { margin: 0 0 5px; font-size: var(--text-subtitle); }
+.task-composer p { margin: 0; color: var(--text-secondary); }
+.task-compose-row { display: grid; grid-template-columns: 150px minmax(0, 1fr) auto; gap: 10px; align-items: stretch; margin-top: 14px; }
+.task-compose-row select, .task-compose-row textarea { width: 100%; padding: 9px 10px; border: 1px solid var(--border-medium); border-radius: var(--radius-sm); background: var(--bg-primary); color: var(--text-primary); font: inherit; }
+.task-compose-row textarea { resize: vertical; min-height: 52px; }
+.task-compose-row .button { align-self: stretch; }
+@media (max-width: 700px) { .task-compose-row { grid-template-columns: 1fr; } }

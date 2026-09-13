@@ -7,6 +7,7 @@ import { DiagnosticView } from "./components/DiagnosticView";
 import { PromptInput } from "./components/PromptInput";
 import { RunView } from "./components/RunView";
 import { TaskBoard } from "./components/TaskBoard";
+import { TaskComposer } from "./components/TaskComposer";
 import { useSidecar } from "./hooks/useSidecar";
 
 type AppView = "run" | "diagnostic" | "agents";
@@ -15,6 +16,7 @@ function App() {
   const sidecarState = useSidecar();
   const [activeView, setActiveView] = useState<AppView>("run");
   const [selectedAgentId, setSelectedAgentId] = useState("hermes");
+  const [taskRefreshSignal, setTaskRefreshSignal] = useState(0);
 
   useEffect(() => {
     if (sidecarState.agents.length === 0) return;
@@ -29,7 +31,7 @@ function App() {
   return <AppShell activeView={activeView} onViewChange={setActiveView} sidecar={sidecarState.sidecar}
     statusList={<AgentStatusList agents={sidecarState.agents} runtimes={sidecarState.runtimes} onSelect={(agentId) => { setSelectedAgentId(agentId); setActiveView("run"); }} />}
     promptInput={activeView === "run" ? <PromptInput agents={sidecarState.agents} runtimes={sidecarState.runtimes} channelPhase={sidecarState.channelPhase} selectedAgentId={selectedAgentId} onSelectAgent={setSelectedAgentId} onRefreshRoster={sidecarState.refreshRoster} onStart={sidecarState.startAgent} /> : null}>
-    {activeView === "run" ? <><RunView agent={selectedAgent} runtime={selectedRuntime} outputs={sidecarState.outputs} channelPhase={sidecarState.channelPhase} rosterLoading={sidecarState.rosterLoading} configError={sidecarState.configError} connectionError={sidecarState.connectionError} onStop={sidecarState.stopAgent} onRefreshRoster={sidecarState.refreshRoster} /><TaskBoard onSelectAgent={setSelectedAgentId} /></> : activeView === "agents" ? <AgentSettingsView agents={sidecarState.agents} /> : <DiagnosticView />}
+    {activeView === "run" ? <><RunView agent={selectedAgent} runtime={selectedRuntime} outputs={sidecarState.outputs} channelPhase={sidecarState.channelPhase} rosterLoading={sidecarState.rosterLoading} configError={sidecarState.configError} connectionError={sidecarState.connectionError} onStop={sidecarState.stopAgent} onRefreshRoster={sidecarState.refreshRoster} /><TaskComposer onSubmitted={() => setTaskRefreshSignal((value) => value + 1)} /><TaskBoard onSelectAgent={setSelectedAgentId} refreshSignal={taskRefreshSignal} /></> : activeView === "agents" ? <AgentSettingsView agents={sidecarState.agents} /> : <DiagnosticView />}
   </AppShell>;
 }
 export default App;
