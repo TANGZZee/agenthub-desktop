@@ -300,6 +300,9 @@ export const TAURI_COMMANDS = {
   startAgent: "start_agent",
   stopAgent: "stop_agent",
   listAgents: "list_agents",
+  submitTask: "submit_task",
+  listTasks: "list_tasks",
+  cancelTask: "cancel_task",
 } as const;
 
 export type TauriCommand = (typeof TAURI_COMMANDS)[keyof typeof TAURI_COMMANDS];
