@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { AgentCatalogView } from "./components/AgentCatalogView";
+import { AgentSettingsView } from "./components/AgentSettingsView";
 import { AgentStatusList } from "./components/AgentStatusList";
 import { AppShell } from "./components/AppShell";
 import { DiagnosticView } from "./components/DiagnosticView";
@@ -73,7 +73,7 @@ function App() {
           onRefreshRoster={sidecarState.refreshRoster}
         />
       ) : activeView === "agents" ? (
-        <AgentCatalogView agents={sidecarState.agents} />
+        <AgentSettingsView agents={sidecarState.agents} />
       ) : (
         <DiagnosticView />
       )}
@@ -82,3 +82,4 @@ function App() {
 }
 
 export default App;
+
