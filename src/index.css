@@ -1296,3 +1296,5 @@ textarea {
 .capability-placeholder h2 { margin: 16px 0 8px; }
 .capability-placeholder p { margin: 0 0 20px; color: var(--text-secondary); line-height: var(--leading-relaxed); }
 @media (max-width: 760px) { .settings-layout { grid-template-columns: 1fr; } .settings-agent-list { max-height: 240px; } }
+.settings-actions { display: flex; align-items: center; gap: 12px; }
+.settings-saved { color: #16803c; font-size: var(--text-caption); }
