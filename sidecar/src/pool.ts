@@ -22,6 +22,7 @@ import {
   resolveModelName,
 } from "./model";
 import type { ResolvedAgentConfig } from "./types";
+import { probeAgent } from "./probe";
 
 export const STOP_TIMEOUT_MS = 3_000;
 
@@ -513,12 +514,13 @@ export class AgentPool {
     return "running";
   }
 
-  listAgents(version: string): ListAgentsRpcResult {
+  async listAgents(version: string): Promise<ListAgentsRpcResult> {
     const config = this.currentConfig();
     const agents: AgentInfo[] = [];
 
     for (const agent of config.agents.values()) {
       const entry = this.entries.get(agent.id);
+      const probe = await probeAgent(agent);
       agents.push({
         id: agent.id,
         label: agent.label,
@@ -529,6 +531,7 @@ export class AgentPool {
         phase: this.phaseFor(entry),
         runId: entry?.runId ?? null,
         resolvedModel: entry?.resolvedModel ?? null,
+        probe,
       });
     }
 

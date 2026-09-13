@@ -82,6 +82,8 @@ export interface AgentInfo {
   runId: number | null;
   /** phase 不为 idle 时本轮实际使用的模型，否则为 null。 */
   resolvedModel: string | null;
+  /** 最近一次只读版本探测结果。 */
+  probe?: { installed: boolean; canStart: boolean; version: string | null; executablePath: string | null; status: "confirmed" | "unavailable" | "failed"; reason?: string };
 }
 
 // ---------------------------------------------------------------------------
