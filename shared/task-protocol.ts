@@ -5,3 +5,5 @@ export interface TaskProposal { proposalId: string; title: string; description: 
 export interface TaskEnvelope extends TaskProposal { taskId: string; cwd: string; allowedPaths: string[]; forbidden: string[]; createdAt: string; assignedWorkerId: string; status: "admitted" | "queued"; }
 export interface AdmissionResult { accepted: boolean; envelope?: TaskEnvelope; reasons: string[]; }
 export const FORBIDDEN_TOOLS = ["terminal", "bash", "browser", "computer_use", "delegation"] as const;
+
+export interface TaskRecordWire extends Omit<TaskEnvelope, 'status'> { status: TaskStatus; updatedAt: string; }

@@ -98,6 +98,9 @@ export const RPC_METHODS = {
   stopAgent: "stopAgent",
   listAgents: "listAgents",
   shutdown: "shutdown",
+  taskSubmit: "taskSubmit",
+  taskList: "taskList",
+  taskCancel: "taskCancel",
 } as const;
 
 export type RpcMethod = (typeof RPC_METHODS)[keyof typeof RPC_METHODS];
@@ -150,6 +153,10 @@ export interface ListAgentsRpcResult {
   version: string;
 }
 
+export interface TaskSubmitParams { proposal: import("./task-protocol").TaskProposal; }
+export interface TaskListParams {}
+export interface TaskCancelParams { taskId: string; }
+
 export interface ShutdownParams {}
 
 export interface ShutdownResult {
@@ -163,6 +170,9 @@ export interface RpcParamsMap {
   stopAgent: StopAgentParams;
   listAgents: ListAgentsParams;
   shutdown: ShutdownParams;
+  taskSubmit: TaskSubmitParams;
+  taskList: TaskListParams;
+  taskCancel: TaskCancelParams;
 }
 
 export interface RpcResultMap {
@@ -172,6 +182,9 @@ export interface RpcResultMap {
   stopAgent: StopAgentResult;
   listAgents: ListAgentsRpcResult;
   shutdown: ShutdownResult;
+  taskSubmit: { accepted: boolean; reasons: string[]; envelope?: import("./task-protocol").TaskEnvelope };
+  taskList: { tasks: Array<import("./task-protocol").TaskRecordWire> };
+  taskCancel: { task: import("./task-protocol").TaskRecordWire };
 }
 
 export interface RpcError {
