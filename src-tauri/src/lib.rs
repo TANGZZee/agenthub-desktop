@@ -392,7 +392,10 @@ pub fn run() {
             get_agent_status,
             sidecar::start_agent,
             sidecar::stop_agent,
-            sidecar::list_agents
+            sidecar::list_agents,
+            sidecar::submit_task,
+            sidecar::list_tasks,
+            sidecar::cancel_task
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
