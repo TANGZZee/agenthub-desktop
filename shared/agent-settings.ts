@@ -115,3 +115,18 @@ export function createDefaultAgentHubSettings(
 export function isShareableCapability(capability: AgentCapability): boolean {
   return capability.kind !== "pi_plugin" && capability.scope === "shared";
 }
+
+/**
+ * Pi 插件的硬性边界：只能绑定 Pi，不能加入共享目录。
+ * 这是安全护栏，防止以后新增目录功能时误把 Pi 插件分发给其他 Agent。
+ */
+export function assertPiPluginIsPrivate(capability: AgentCapability): void {
+  if (capability.kind !== "pi_plugin") return;
+  if (
+    capability.scope !== "agent_native" ||
+    capability.ownerAgentId !== "pi" ||
+    capability.supportedAgentIds.some((agentId) => agentId !== "pi")
+  ) {
+    throw new Error("Pi 插件必须保持 Pi 专属，不能共享给其他 Agent");
+  }
+}
