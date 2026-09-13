@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
-import { Check, Plug, Puzzle, Save, ShieldCheck } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Check, Plug, Puzzle, Save, ShieldCheck, Sparkles } from "lucide-react";
 import type { CatalogAgent } from "../hooks/useSidecar";
 import { createDefaultAgentHubSettings, type AgentHubAgentSettings } from "../../shared/agent-settings";
 
 interface AgentSettingsViewProps { agents: CatalogAgent[]; }
-type Section = "agent" | "skills" | "mcp";
+type Section = "agent" | "plugins" | "skills" | "mcp";
 type StoredSettings = Record<string, AgentHubAgentSettings>;
 const STORAGE_KEY = "agenthub.agentHubSettings.v1";
 
@@ -33,22 +33,41 @@ export function AgentSettingsView({ agents }: AgentSettingsViewProps) {
     setSaved(false);
     setAllSettings((old) => ({ ...old, [selected]: { ...settings, [key]: value } }));
   };
-  const save = () => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(allSettings));
-    setSaved(true);
-  };
+  const save = () => { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(allSettings)); setSaved(true); };
+  const reset = () => { setAllSettings((old) => ({ ...old, [selected]: createDefaultAgentHubSettings(selected) })); setSaved(false); };
   const chooseAgent = (id: string) => { setSelected(id); setSection("agent"); setSaved(false); };
 
   return <div className="settings-view">
     <header className="app-header"><div><h1>Agent 设置中心</h1><p>分别管理每个 Agent，同时统一管理共享 Skill 和 MCP。</p></div><ShieldCheck size={22} aria-hidden="true" /></header>
     <div className="settings-layout">
-      <aside className="settings-agent-list"><h2>Agent</h2>{agents.map((agent) => <button key={agent.id} type="button" className={`settings-agent-item ${selected === agent.id ? "active" : ""}`} onClick={() => chooseAgent(agent.id)}><span className={`agent-catalog-dot ${agent.configured ? "ok" : "warning"}`} />{agent.label}<small>{agent.configured ? "可配置" : "需检查"}</small></button>)}<h2 className="settings-group-title">共享能力</h2><button type="button" className={`settings-agent-item ${section === "skills" ? "active" : ""}`} onClick={() => setSection("skills")}><Puzzle size={15} />共享 Skill</button><button type="button" className={`settings-agent-item ${section === "mcp" ? "active" : ""}`} onClick={() => setSection("mcp")}><Plug size={15} />共享 MCP</button></aside>
+      <aside className="settings-agent-list">
+        <h2>Agent</h2>
+        {agents.map((agent) => <button key={agent.id} type="button" className={`settings-agent-item ${selected === agent.id && section === "agent" ? "active" : ""}`} onClick={() => chooseAgent(agent.id)}><span className={`agent-catalog-dot ${agent.configured ? "ok" : "warning"}`} />{agent.label}<small>{agent.configured ? "可配置" : "需检查"}</small></button>)}
+        {selected === "pi" && <button type="button" className={`settings-agent-item ${section === "plugins" ? "active" : ""}`} onClick={() => setSection("plugins")}><Puzzle size={15} />Pi 插件</button>}
+        <h2 className="settings-group-title">共享能力</h2>
+        <button type="button" className={`settings-agent-item ${section === "skills" ? "active" : ""}`} onClick={() => setSection("skills")}><Sparkles size={15} />共享 Skill</button>
+        <button type="button" className={`settings-agent-item ${section === "mcp" ? "active" : ""}`} onClick={() => setSection("mcp")}><Plug size={15} />共享 MCP</button>
+      </aside>
       <section className="settings-panel">
-        {section === "agent" && <><div className="settings-panel-title"><div><h2>{selectedAgent?.label ?? selected}</h2><p>这里是 AgentHub 的调度设置，不会覆盖 Agent 原生桌面设置。</p></div><span className="settings-badge"><Check size={14} />安全默认值</span></div><div className="settings-form"><label className="setting-toggle"><span><strong>启用此 Agent</strong><small>关闭后 Hermes 不会把新任务派给它。</small></span><input type="checkbox" checked={settings.enabled} onChange={(e) => update("enabled", e.currentTarget.checked)} /></label><label className="setting-toggle"><span><strong>允许 Hermes 调度</strong><small>允许 Hermes 把后台任务交给这个 Agent。</small></span><input type="checkbox" checked={settings.allowHermesDispatch} onChange={(e) => update("allowHermesDispatch", e.currentTarget.checked)} /></label><label className="setting-toggle"><span><strong>允许写入文件</strong><small>关闭时只允许进行只读型工作。</small></span><input type="checkbox" checked={settings.allowWrite} onChange={(e) => update("allowWrite", e.currentTarget.checked)} /></label><label className="setting-toggle"><span><strong>高风险操作需要确认</strong><small>像实验室的安全开关，建议保持开启。</small></span><input type="checkbox" checked={settings.requireConfirmation} onChange={(e) => update("requireConfirmation", e.currentTarget.checked)} /></label><label className="setting-toggle"><span><strong>显示详细工作日志</strong><small>允许你查看后台 Agent 的工作过程。</small></span><input type="checkbox" checked={settings.showDetailedLogs} onChange={(e) => update("showDetailedLogs", e.currentTarget.checked)} /></label><label className="setting-number"><span>任务超时（秒）</span><input type="number" min={30} max={86400} value={settings.timeoutSeconds} onChange={(e) => update("timeoutSeconds", Number(e.currentTarget.value))} /></label><label className="setting-number"><span>调度优先级</span><input type="number" min={0} max={100} value={settings.priority} onChange={(e) => update("priority", Number(e.currentTarget.value))} /></label></div><div className="settings-actions"><button type="button" className="button button-primary settings-save" onClick={save}><Save size={15} />保存设置</button>{saved && <span className="settings-saved">已保存到本机</span>}</div></>}
-        {section === "skills" && <CapabilityPlaceholder title="共享 Skill" icon={<Puzzle size={20} />} text="这里将统一安装和启用多个 Agent 都能使用的 Skill。每个 Skill 仍会逐个检查兼容性和权限。" />}
-        {section === "mcp" && <CapabilityPlaceholder title="共享 MCP" icon={<Plug size={20} />} text="这里将统一登记 MCP 服务连接。密钥只保存状态，不在界面中显示真实内容。" />}
+        {section === "agent" && <AgentHubForm agentName={selectedAgent?.label ?? selected} settings={settings} saved={saved} onUpdate={update} onSave={save} onReset={reset} />}
+        {section === "plugins" && <CapabilityPlaceholder title="Pi 专属插件" icon={<Puzzle size={20} />} text="Pi 插件只服务于 Pi，不会自动共享给其他 Agent。安装前会检查来源、版本和权限。" />}
+        {section === "skills" && <CapabilityPlaceholder title="共享 Skill" icon={<Sparkles size={20} />} text="这里统一登记多个 Agent 都能使用的 Skill。每个 Skill 仍会逐个检查兼容性和权限。" />}
+        {section === "mcp" && <CapabilityPlaceholder title="共享 MCP" icon={<Plug size={20} />} text="这里统一登记 MCP 服务连接。密钥只保存状态，不在界面中显示真实内容。" />}
       </section>
     </div>
   </div>;
 }
-function CapabilityPlaceholder({ title, icon, text }: { title: string; icon: React.ReactNode; text: string }) { return <div className="capability-placeholder"><div className="capability-icon">{icon}</div><h2>{title}</h2><p>{text}</p><button type="button" className="button button-secondary" disabled>即将支持安装与管理</button></div>; }
+
+function AgentHubForm({ agentName, settings, saved, onUpdate, onSave, onReset }: { agentName: string; settings: AgentHubAgentSettings; saved: boolean; onUpdate: <K extends keyof AgentHubAgentSettings>(key: K, value: AgentHubAgentSettings[K]) => void; onSave: () => void; onReset: () => void; }) {
+  return <><div className="settings-panel-title"><div><h2>{agentName}</h2><p>这是 AgentHub 的调度设置，不会覆盖 Agent 原生桌面设置。</p></div><span className="settings-badge"><Check size={14} />安全默认值</span></div><div className="settings-form">
+    <Toggle label="启用此 Agent" help="关闭后 Hermes 不会把新任务派给它。" value={settings.enabled} onChange={(value) => onUpdate("enabled", value)} />
+    <Toggle label="允许 Hermes 调度" help="允许 Hermes 把后台任务交给这个 Agent。" value={settings.allowHermesDispatch} onChange={(value) => onUpdate("allowHermesDispatch", value)} />
+    <Toggle label="允许写入文件" help="关闭时只允许进行只读型工作。" value={settings.allowWrite} onChange={(value) => onUpdate("allowWrite", value)} />
+    <Toggle label="高风险操作需要确认" help="像实验室的安全开关，建议保持开启。" value={settings.requireConfirmation} onChange={(value) => onUpdate("requireConfirmation", value)} />
+    <Toggle label="显示详细工作日志" help="允许你查看后台 Agent 的工作过程。" value={settings.showDetailedLogs} onChange={(value) => onUpdate("showDetailedLogs", value)} />
+    <label className="setting-number"><span>任务超时（秒）</span><input type="number" min={30} max={86400} value={settings.timeoutSeconds} onChange={(e) => onUpdate("timeoutSeconds", Number(e.currentTarget.value))} /></label>
+    <label className="setting-number"><span>调度优先级</span><input type="number" min={0} max={100} value={settings.priority} onChange={(e) => onUpdate("priority", Number(e.currentTarget.value))} /></label>
+  </div><div className="settings-actions"><button type="button" className="button button-primary settings-save" onClick={onSave}><Save size={15} />保存设置</button><button type="button" className="button button-secondary" onClick={onReset}>恢复安全默认值</button>{saved && <span className="settings-saved">已保存到本机</span>}</div></>;
+}
+function Toggle({ label, help, value, onChange }: { label: string; help: string; value: boolean; onChange: (value: boolean) => void }) { return <label className="setting-toggle"><span><strong>{label}</strong><small>{help}</small></span><input type="checkbox" checked={value} onChange={(e) => onChange(e.currentTarget.checked)} /></label>; }
+function CapabilityPlaceholder({ title, icon, text }: { title: string; icon: ReactNode; text: string }) { return <div className="capability-placeholder"><div className="capability-icon">{icon}</div><h2>{title}</h2><p>{text}</p><button type="button" className="button button-secondary" disabled>目录扫描与安装引导即将支持</button></div>; }
