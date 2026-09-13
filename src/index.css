@@ -1298,3 +1298,11 @@ textarea {
 @media (max-width: 760px) { .settings-layout { grid-template-columns: 1fr; } .settings-agent-list { max-height: 240px; } }
 .settings-actions { display: flex; align-items: center; gap: 12px; }
 .settings-saved { color: #16803c; font-size: var(--text-caption); }
+.capability-catalog { max-width: 900px; margin: 0 auto; }
+.capability-list { display: grid; gap: 12px; margin-top: 22px; }
+.capability-card { display: flex; justify-content: space-between; gap: 18px; padding: 16px; border: 1px solid var(--border-light); border-radius: var(--radius-md); background: var(--bg-primary); }
+.capability-card h3 { margin: 0 0 5px; font-size: var(--text-subtitle); }
+.capability-card p { margin: 0 0 8px; color: var(--text-secondary); }
+.capability-card small { color: var(--text-tertiary); }
+.capability-card-side { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; flex: 0 0 auto; }
+.catalog-note { margin-top: 18px; color: var(--text-secondary); font-size: var(--text-caption); }
