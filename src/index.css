@@ -1334,3 +1334,25 @@ textarea {
 .task-compose-row textarea { resize: vertical; min-height: 52px; }
 .task-compose-row .button { align-self: stretch; }
 @media (max-width: 700px) { .task-compose-row { grid-template-columns: 1fr; } }
+.office-view { display: grid; gap: 18px; }
+.office-status-guide { display: flex; gap: 9px; align-items: flex-start; padding: 12px 14px; border: 1px solid #cfe3fa; border-radius: var(--radius-md); color: #215e98; background: var(--accent-subtle); }
+.office-agent-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.office-agent-card { display: flex; gap: 13px; padding: 16px; border: 1px solid var(--border-light); border-radius: var(--radius-lg); background: var(--bg-primary); box-shadow: var(--shadow-card); }
+.office-agent-card.error { border-color: #ffb9b5; }
+.office-avatar { display: grid; place-items: center; width: 42px; height: 42px; flex: 0 0 auto; border-radius: 12px; color: var(--text-on-accent); background: var(--accent); font-weight: 700; }
+.office-agent-card.error .office-avatar { background: var(--status-error); }
+.office-agent-card h2 { margin: 0 0 3px; font-size: var(--text-subtitle); }
+.office-agent-card p { margin: 7px 0 0; color: var(--text-secondary); font-size: var(--text-caption); }
+.office-state { color: #16803c; font-size: var(--text-caption); }
+.office-agent-card.error .office-state { color: #c42b23; }
+.star-office-panel { padding: 18px; border: 1px solid var(--border-light); border-radius: var(--radius-lg); background: var(--bg-tertiary); }
+.star-office-header { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; margin-bottom: 14px; }
+.star-office-header h2 { margin: 0 0 4px; font-size: var(--text-title); }
+.star-office-header p { margin: 0; color: var(--text-secondary); }
+.star-office-frame-wrap { position: relative; min-height: 440px; overflow: hidden; border: 1px solid var(--border-medium); border-radius: var(--radius-md); background: #1a1a2e; }
+.star-office-frame { position: relative; z-index: 1; width: 100%; min-height: 520px; border: 0; background: transparent; }
+.star-office-fallback { position: absolute; inset: 0; display: grid; place-content: center; gap: 8px; padding: 30px; color: #d7d8e4; text-align: center; }
+.star-office-fallback strong { color: #fff; }
+.office-credit { margin: 12px 0 0; color: var(--text-secondary); font-size: var(--text-caption); }
+.office-credit code { overflow-wrap: anywhere; }
+@media (max-width: 700px) { .star-office-header { flex-direction: column; } .star-office-frame-wrap { min-height: 300px; } .star-office-frame { min-height: 400px; } }

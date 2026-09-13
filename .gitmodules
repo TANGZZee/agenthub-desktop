@@ -1,0 +1,3 @@
+[submodule "third_party/Star-Office-UI"]
+	path = third_party/Star-Office-UI
+	url = https://github.com/ringhyacinth/Star-Office-UI.git
