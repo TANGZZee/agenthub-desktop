@@ -4,13 +4,14 @@ import {
   Bot,
   LayoutDashboard,
   Terminal,
+  UsersRound,
 } from "lucide-react";
 
 import type { SidecarDisplayStatus } from "../hooks/useSidecar";
 
 interface AppShellProps {
-  activeView: "run" | "diagnostic";
-  onViewChange: (view: "run" | "diagnostic") => void;
+  activeView: "run" | "diagnostic" | "agents";
+  onViewChange: (view: "run" | "diagnostic" | "agents") => void;
   sidecar: SidecarDisplayStatus;
   statusList: ReactNode;
   promptInput: ReactNode;
@@ -25,7 +26,7 @@ export function AppShell({
   promptInput,
   children,
 }: AppShellProps) {
-  const title = activeView === "run" ? "运行" : "诊断";
+  const title = activeView === "run" ? "运行" : activeView === "agents" ? "Agent / 智能体" : "诊断";
 
   return (
     <div className="primary-shell">
@@ -54,7 +55,15 @@ export function AppShell({
             <Terminal size={17} aria-hidden="true" />
             <span>诊断</span>
           </button>
-        </nav>
+'          <button
+            type="button"
+            className={`nav-item ${activeView === "agents" ? "active" : ""}`}
+            onClick={() => onViewChange("agents")}
+          >
+            <UsersRound size={17} aria-hidden="true" />
+            <span>Agent / 智能体</span>
+          </button>
+'        </nav>
 
         <div className="sidebar-status">{statusList}</div>
       </aside>
@@ -85,3 +94,6 @@ export function AppShell({
     </div>
   );
 }
+
+
+

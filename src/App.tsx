@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { AgentCatalogView } from "./components/AgentCatalogView";
 import { AgentStatusList } from "./components/AgentStatusList";
 import { AppShell } from "./components/AppShell";
 import { DiagnosticView } from "./components/DiagnosticView";
@@ -7,7 +8,7 @@ import { PromptInput } from "./components/PromptInput";
 import { RunView } from "./components/RunView";
 import { useSidecar } from "./hooks/useSidecar";
 
-type AppView = "run" | "diagnostic";
+type AppView = "run" | "diagnostic" | "agents";
 
 function App() {
   const sidecarState = useSidecar();
@@ -19,7 +20,6 @@ function App() {
     if (sidecarState.agents.some((agent) => agent.id === selectedAgentId)) {
       return;
     }
-
     const fallback =
       sidecarState.agents.find((agent) => agent.configured) ??
       sidecarState.agents[0];
@@ -72,6 +72,8 @@ function App() {
           onStop={sidecarState.stopAgent}
           onRefreshRoster={sidecarState.refreshRoster}
         />
+      ) : activeView === "agents" ? (
+        <AgentCatalogView agents={sidecarState.agents} />
       ) : (
         <DiagnosticView />
       )}
