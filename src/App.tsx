@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { AgentSettingsView } from "./components/AgentSettingsView";
 import { AgentStatusList } from "./components/AgentStatusList";
@@ -22,6 +22,20 @@ function App() {
   const [selectedAgentId, setSelectedAgentId] = useState("hermes");
   const [taskRefreshSignal, setTaskRefreshSignal] = useState(0);
   const [tasksOpen, setTasksOpen] = useState(true);
+  const prevPhases = useRef<Record<string, string | undefined>>({});
+
+  useEffect(() => {
+    for (const agent of sidecarState.agents) {
+      const runtime = sidecarState.runtimes[agent.id];
+      const previous = prevPhases.current[agent.id];
+      const now = runtime?.phase;
+      if (previous === "running" && now === "finished") {
+        const ok = runtime?.result === "success";
+        workspace.addMessage("assistant", ok ? `${agent.label} 已完成这轮工作。` : `${agent.label} 这轮失败了：${runtime?.lastError ?? "原因未知，可在任务栏查看过程。"}`);
+      }
+      prevPhases.current[agent.id] = now;
+    }
+  }, [sidecarState.runtimes, sidecarState.agents]);
 
   useEffect(() => {
     if (sidecarState.agents.length === 0) return;
@@ -30,7 +44,7 @@ function App() {
     setSelectedAgentId(fallback.id);
   }, [selectedAgentId, sidecarState.agents]);
 
-  async function submitPlannedTask(prompt: string, workerId?: "pi" | "codex") {
+  async function submitPlannedTask(prompt: string, workerId?: "pi" | "codex", model?: string) {
     workspace.addMessage("user", prompt);
     const planned = buildReadOnlyProposal(prompt, workerId);
     const proposal: TaskProposal = {
@@ -41,6 +55,7 @@ function App() {
       toolPolicy: planned.toolPolicy,
       writeScope: planned.writeScope,
       budget: planned.budget,
+      ...(model ? { model } : {}),
     };
     try {
       const result = await invoke<{ accepted: boolean; reasons: string[] }>(TAURI_COMMANDS.submitTask, { proposal });

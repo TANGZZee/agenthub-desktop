@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ExternalLink, MonitorPlay } from "lucide-react";
+import { ExternalLink, MonitorPlay, Power } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import type { CatalogAgent, AgentRuntime } from "../hooks/useSidecar";
 import { TAURI_COMMANDS } from "../../shared/protocol";
@@ -36,8 +36,25 @@ function detailFor(agent: CatalogAgent, runtime: AgentRuntime | undefined, task?
 export function OfficeView({ agents, runtimes, refreshSignal }: OfficeViewProps) {
   const [tasks, setTasks] = useState<TaskRecordWire[]>([]);
   const [pixelOn, setPixelOn] = useState(false);
-  const [pixelError, setPixelError] = useState<string | null>(null);
+
   const [checking, setChecking] = useState(false);
+  const [pixelNote, setPixelNote] = useState<string | null>(null);
+
+  const [starting, setStarting] = useState(false);
+
+  async function startPixel() {
+    setStarting(true);
+    setPixelNote(null);
+    try {
+      const message = await invoke<string>("start_star_office");
+      setPixelNote(message);
+      window.setTimeout(() => void togglePixel(), 2500);
+    } catch (error) {
+      setPixelNote(error instanceof Error ? error.message : String(error));
+    } finally {
+      setStarting(false);
+    }
+  }
 
   async function togglePixel() {
     if (pixelOn) {
@@ -45,12 +62,12 @@ export function OfficeView({ agents, runtimes, refreshSignal }: OfficeViewProps)
       return;
     }
     setChecking(true);
-    setPixelError(null);
+    setPixelNote(null);
     try {
       await fetch("http://127.0.0.1:19000/health", { mode: "no-cors" });
       setPixelOn(true);
     } catch {
-      setPixelError("连不上 127.0.0.1:19000。请先在本机启动 Star Office 本地服务，再打开像素办公室。");
+      setPixelNote("还没连上 19000 端口。如果刚点过启动，请再等几秒；若一直连不上，说明 Python 或依赖还没装好。");
     } finally {
       setChecking(false);
     }
@@ -99,6 +116,9 @@ export function OfficeView({ agents, runtimes, refreshSignal }: OfficeViewProps)
             <p>可选模块。需要先在本机启动 Star Office 服务，再在这里打开。</p>
           </div>
           <div className="office-actions">
+            <button type="button" className="button button-secondary" disabled={starting} onClick={() => void startPixel()}>
+              <Power size={14} />{starting ? "启动中" : "启动像素办公室"}
+            </button>
             <button type="button" className="button button-secondary" disabled={checking} onClick={() => void togglePixel()}>
               {checking ? "检查中" : pixelOn ? "关闭像素办公室" : "打开像素办公室"}
             </button>
@@ -113,8 +133,8 @@ export function OfficeView({ agents, runtimes, refreshSignal }: OfficeViewProps)
           </div>
         ) : (
           <>
-            {pixelError && <p className="inline-error">{pixelError}</p>}
-            <p className="office-idle">未打开。会先检查服务是否在 19000 端口，连不上就不会显示灰色失败页。</p>
+            {pixelNote && <p className="office-note">{pixelNote}</p>}
+            <p className="office-idle">未打开。像素办公室是 Python 服务：先点「启动像素办公室」，再点「打开」。本机没装 Python 时会直接告诉你缺什么。</p>
           </>
         )}
       </section>

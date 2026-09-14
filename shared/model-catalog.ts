@@ -6,6 +6,31 @@ export interface CatalogModel {
 }
 
 const KEY = "agenthub.modelCatalog.v1";
+const PROVIDER_KEY = "agenthub.modelProviders.v1";
+
+export interface ModelProvider {
+  id: string;
+  name: string;
+  baseUrl: string;
+  apiKey: string;
+  enabled: boolean;
+}
+
+export function loadProviders(): ModelProvider[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(PROVIDER_KEY);
+    if (raw) return JSON.parse(raw) as ModelProvider[];
+  } catch {
+    /* ignore */
+  }
+  return [];
+}
+
+export function saveProviders(providers: ModelProvider[]): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(PROVIDER_KEY, JSON.stringify(providers));
+}
 
 export const DEFAULT_MODEL_CATALOG: CatalogModel[] = [
   { id: "haiku", label: "Haiku", provider: "anthropic", note: "快而便宜，适合简单阅读" },
@@ -17,6 +42,7 @@ export const DEFAULT_MODEL_CATALOG: CatalogModel[] = [
 ];
 
 export function loadModelCatalog(): CatalogModel[] {
+  if (typeof window === "undefined") return DEFAULT_MODEL_CATALOG;
   try {
     const raw = window.localStorage.getItem(KEY);
     if (raw) return JSON.parse(raw) as CatalogModel[];
@@ -27,5 +53,6 @@ export function loadModelCatalog(): CatalogModel[] {
 }
 
 export function saveModelCatalog(models: CatalogModel[]): void {
+  if (typeof window === "undefined") return;
   window.localStorage.setItem(KEY, JSON.stringify(models));
 }

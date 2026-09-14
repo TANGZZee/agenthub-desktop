@@ -397,7 +397,9 @@ pub fn run() {
             sidecar::list_tasks,
             sidecar::cancel_task,
             sidecar::list_task_events,
-            sidecar::retry_task
+            sidecar::retry_task,
+            sidecar::fetch_provider_models,
+            sidecar::start_star_office
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

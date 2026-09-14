@@ -102,7 +102,7 @@ function startQueuedTask(taskId: string): void {
       .startAgent({
         agentId: task.assignedWorkerId,
         prompt: task.description,
-        model: null,
+        model: task.model ?? null,
         runId,
       })
       .catch((error) => {
@@ -293,7 +293,21 @@ const handlers: RpcHandlers = {
     pumpQueue();
     return { task: retried };
   },
-  shutdown: () => ({ ok: true }),
+  providerModels: async (params) => {
+    const base = params.baseUrl.replace(/\/+$/, "");
+    try {
+      const response = await fetch(`${base}/models`, { headers: { Authorization: `Bearer ${params.apiKey}` } });
+      if (!response.ok) return { models: [], error: `服务返回 ${response.status}` };
+      const json = (await response.json()) as unknown;
+      const list = Array.isArray(json) ? json : (json as { data?: unknown }).data ?? (json as { models?: unknown }).models;
+      const models = Array.isArray(list)
+        ? list.map((item) => (typeof item === "string" ? item : String((item as { id?: unknown }).id ?? ""))).filter(Boolean)
+        : [];
+      return { models };
+    } catch (error) {
+      return { models: [], error: error instanceof Error ? error.message : String(error) };
+    }
+  },  shutdown: () => ({ ok: true }),
 };
 
 server = new JsonRpcServer(handlers, {

@@ -1717,3 +1717,11 @@ html[data-theme="direct"] .chat-tabs button {
 .model-card-fields input, .model-add-row input { padding: 7px 9px; border: 1px solid var(--border-medium); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary); font: inherit; }
 .model-add-row { display: grid; grid-template-columns: 1fr 1fr 120px auto; gap: 8px; margin-top: 14px; }
 @media (max-width: 900px) { .model-add-row { grid-template-columns: 1fr; } }
+.model-manager { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 16px; height: 100%; min-height: 0; }
+.model-manager-side { overflow: auto; padding-right: 8px; border-right: 1px solid var(--border-light); }
+.model-manager-main { overflow: auto; padding: 4px 8px 24px 4px; }
+.model-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.model-chip { padding: 6px 10px; border: 1px solid var(--border-medium); border-radius: 999px; background: var(--bg-primary); color: var(--text-primary); font-size: var(--text-caption); cursor: pointer; }
+.model-chip:disabled { opacity: .45; cursor: default; }
+.model-chip.static { cursor: default; }
+@media (max-width: 900px) { .model-manager { grid-template-columns: 1fr; } }

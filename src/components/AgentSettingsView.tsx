@@ -3,7 +3,9 @@ import { Check, Plug, Puzzle, Save, ShieldCheck, Sparkles } from "lucide-react";
 import type { CatalogAgent } from "../hooks/useSidecar";
 import { createDefaultAgentHubSettings, type AgentHubAgentSettings } from "../../shared/agent-settings";
 import { BUILTIN_PI_PLUGINS, BUILTIN_SHARED_MCP, BUILTIN_SHARED_SKILLS } from "../../shared/capability-catalog";
-import { DEFAULT_MODEL_CATALOG, loadModelCatalog, saveModelCatalog, type CatalogModel } from "../../shared/model-catalog";
+import { loadModelCatalog, loadProviders, saveModelCatalog, saveProviders, type CatalogModel, type ModelProvider } from "../../shared/model-catalog";
+import { invoke } from "@tauri-apps/api/core";
+import { TAURI_COMMANDS } from "../../shared/protocol";
 import {
   createDefaultNativeSettings,
   HERMES_TOOLSETS,
@@ -46,6 +48,7 @@ export function AgentSettingsView({ agents }: AgentSettingsViewProps) {
   const [saved, setSaved] = useState(false);
   const [guide, setGuide] = useState<{ name: string; permissions: string[] } | null>(null);
   const [catalog, setCatalog] = useState<CatalogModel[]>(() => loadModelCatalog());
+  const [providers, setProviders] = useState<ModelProvider[]>(() => loadProviders());
 
   const hub = allHub[selected] ?? createDefaultAgentHubSettings(selected);
   const native = allNative[selected] ?? createDefaultNativeSettings(selected);
@@ -168,7 +171,7 @@ export function AgentSettingsView({ agents }: AgentSettingsViewProps) {
               onReset={reset}
             />
           )}
-          {section === "models" && <ModelCatalogPanel catalog={catalog} onChange={(next) => { setCatalog(next); saveModelCatalog(next); }} />}
+          {section === "models" && <ModelCatalogPanel catalog={catalog} providers={providers} onCatalog={(next) => { setCatalog(next); saveModelCatalog(next); }} onProviders={(next) => { setProviders(next); saveProviders(next); }} />}
           {section === "plugins" && <CapabilityCatalog title="Pi 插件" icon={<Puzzle size={20} />} items={piItems} onToggle={toggleCapability} onGuide={setGuide} />}
           {section === "skills" && <CapabilityCatalog title="共享 Skill" icon={<Sparkles size={20} />} items={skillItems} onToggle={toggleCapability} onGuide={setGuide} />}
           {section === "mcp" && <CapabilityCatalog title="共享 MCP" icon={<Plug size={20} />} items={mcpItems} onToggle={toggleCapability} onGuide={setGuide} />}
@@ -446,49 +449,94 @@ function InstallGuide({ name, permissions, onClose }: { name: string; permission
   );
 }
 
-function ModelCatalogPanel({ catalog, onChange }: { catalog: CatalogModel[]; onChange: (next: CatalogModel[]) => void }) {
-  const [draft, setDraft] = useState({ id: "", label: "", provider: "cc-switch" });
-  function update(index: number, patch: Partial<CatalogModel>) {
-    onChange(catalog.map((item, i) => (i === index ? { ...item, ...patch } : item)));
+function ModelCatalogPanel({ catalog, providers, onCatalog, onProviders }: { catalog: CatalogModel[]; providers: ModelProvider[]; onCatalog: (next: CatalogModel[]) => void; onProviders: (next: ModelProvider[]) => void }) {
+  const [selected, setSelected] = useState<string | null>(providers[0]?.id ?? null);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+  const [fetched, setFetched] = useState<string[]>([]);
+  const current = providers.find((item) => item.id === selected) ?? providers[0];
+
+  function patchProvider(id: string, patch: Partial<ModelProvider>) {
+    onProviders(providers.map((item) => (item.id === id ? { ...item, ...patch } : item)));
   }
-  function remove(index: number) {
-    onChange(catalog.filter((_, i) => i !== index));
+  function addProvider() {
+    const provider: ModelProvider = { id: `prov-${Date.now()}`, name: "新供应商", baseUrl: "", apiKey: "", enabled: true };
+    onProviders([...providers, provider]);
+    setSelected(provider.id);
   }
-  function add() {
-    const id = draft.id.trim() || draft.label.trim().toLowerCase().replace(/\s+/g, "-");
-    if (!id) return;
-    onChange([...catalog, { id, label: draft.label.trim() || id, provider: draft.provider.trim() || "custom" }]);
-    setDraft({ id: "", label: "", provider: "cc-switch" });
+  function removeProvider(id: string) {
+    const next = providers.filter((item) => item.id !== id);
+    onProviders(next);
+    setSelected(next[0]?.id ?? null);
   }
+  async function fetchModels() {
+    if (!current) return;
+    setBusy(true);
+    setNote(null);
+    try {
+      const result = await invoke<{ models: string[]; error?: string }>(TAURI_COMMANDS.fetchProviderModels, { baseUrl: current.baseUrl, apiKey: current.apiKey });
+      if (result.error) throw new Error(result.error);
+      setFetched(result.models);
+      setNote(result.models.length ? `拉到 ${result.models.length} 个模型，点一下即可加入公共模型。` : "连接成功，但这个供应商没有返回模型列表。");
+    } catch (error) {
+      setFetched([]);
+      setNote(error instanceof Error ? error.message : String(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+  function addModel(id: string) {
+    if (catalog.some((item) => item.id === id)) return;
+    onCatalog([...catalog, { id, label: id, provider: current?.name ?? "custom" }]);
+  }
+
   return (
-    <div className="capability-catalog">
-      <div className="settings-panel-title">
-        <div>
-          <h2>公共模型配置</h2>
-          <p>所有 Agent 的单独模型设置都从这里选。这里不保存密钥。</p>
-        </div>
-      </div>
-      <div className="capability-list">
-        {catalog.map((item, index) => (
-          <article className="capability-card" key={item.id}>
-            <div className="model-card-fields">
-              <label><span>显示名</span><input value={item.label} onChange={(e) => update(index, { label: e.currentTarget.value })} /></label>
-              <label><span>模型 ID</span><input value={item.id} onChange={(e) => update(index, { id: e.currentTarget.value })} /></label>
-              <label><span>提供方</span><input value={item.provider} onChange={(e) => update(index, { provider: e.currentTarget.value })} /></label>
-            </div>
-            <div className="capability-card-side">
-              <button type="button" className="button button-secondary" onClick={() => remove(index)}>移除</button>
-            </div>
-          </article>
+    <div className="model-manager">
+      <div className="model-manager-side">
+        <div className="chat-nav-heading"><span>供应商</span><button type="button" className="icon-button" title="新增供应商" onClick={addProvider}>+</button></div>
+        {providers.map((item) => (
+          <button type="button" key={item.id} className={`chat-conv ${item.id === current?.id ? "active" : ""}`} onClick={() => setSelected(item.id)}>
+            {item.name}
+          </button>
         ))}
+        {providers.length === 0 && <p className="task-empty">还没有供应商。点 + 新增一个。</p>}
       </div>
-      <div className="model-add-row">
-        <input placeholder="模型 ID，如 gpt-5.6" value={draft.id} onChange={(e) => setDraft({ ...draft, id: e.currentTarget.value })} />
-        <input placeholder="显示名，如 GPT-5.6" value={draft.label} onChange={(e) => setDraft({ ...draft, label: e.currentTarget.value })} />
-        <input placeholder="提供方" value={draft.provider} onChange={(e) => setDraft({ ...draft, provider: e.currentTarget.value })} />
-        <button type="button" className="button button-primary" onClick={add}>加入公共模型</button>
+      <div className="model-manager-main">
+        {current ? (
+          <>
+            <div className="model-card-fields">
+              <label><span>名称</span><input value={current.name} onChange={(e) => patchProvider(current.id, { name: e.currentTarget.value })} /></label>
+              <label><span>Base URL</span><input value={current.baseUrl} placeholder="https://example.com/v1" onChange={(e) => patchProvider(current.id, { baseUrl: e.currentTarget.value })} /></label>
+              <label><span>API Key</span><input type="password" value={current.apiKey} placeholder="只存在本机" onChange={(e) => patchProvider(current.id, { apiKey: e.currentTarget.value })} /></label>
+            </div>
+            <div className="model-add-row">
+              <button type="button" className="button button-primary" disabled={busy || !current.baseUrl || !current.apiKey} onClick={() => void fetchModels()}>
+                {busy ? "拉取中" : "拉取模型"}
+              </button>
+              <button type="button" className="button button-secondary" onClick={() => removeProvider(current.id)}>删除供应商</button>
+            </div>
+            {note && <p className="office-note">{note}</p>}
+            {fetched.length > 0 && (
+              <div className="model-chips">
+                {fetched.map((id) => (
+                  <button type="button" key={id} className="model-chip" disabled={catalog.some((item) => item.id === id)} onClick={() => addModel(id)}>
+                    {id}
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <p className="task-empty">先在左侧新增供应商，填 Base URL 和 API Key，就能自动拉模型。</p>
+        )}
+        <div className="chat-nav-heading"><span>公共模型（{catalog.length}）</span></div>
+        <div className="model-chips">
+          {catalog.map((item) => (
+            <span className="model-chip static" key={item.id} title={`${item.provider}${item.note ? ` · ${item.note}` : ""}`}>{item.label}</span>
+          ))}
+        </div>
+        <p className="catalog-note">密钥只存在本机浏览器存储，不会写进日志或发给 AgentHub 以外的地方。拉取模型走本机 Sidecar，不经过网页跨域限制。</p>
       </div>
-      <p className="catalog-note">默认提供 {DEFAULT_MODEL_CATALOG.length} 个常用模型。移除只影响 AgentHub 的选择列表，不会删除真实服务里的模型。</p>
     </div>
   );
 }

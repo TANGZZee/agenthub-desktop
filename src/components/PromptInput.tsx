@@ -12,7 +12,7 @@ interface PromptInputProps {
   onSelectAgent: (agentId: string) => void;
   onRefreshRoster: () => Promise<void>;
   onStart: (agentId: string, prompt: string, model: string | null) => Promise<void>;
-  onSubmitTask?: (prompt: string, workerId?: "pi" | "codex") => Promise<void>;
+  onSubmitTask?: (prompt: string, workerId?: "pi" | "codex", model?: string) => Promise<void>;
 }
 
 function canStartPhase(runtime: AgentRuntime | undefined): boolean {
@@ -63,8 +63,8 @@ export function PromptInput({
     if (!enabled || !selectedAgent) return;
     const task = prompt.trim();
     setPrompt("");
-    if (isHermesEntry && onSubmitTask) {
-      await onSubmitTask(task);
+    if (onSubmitTask) {
+      await onSubmitTask(task, isHermesEntry ? undefined : (selectedAgent.id as "pi" | "codex"), model || undefined);
       return;
     }
     await onStart(selectedAgent.id, task, model || null);

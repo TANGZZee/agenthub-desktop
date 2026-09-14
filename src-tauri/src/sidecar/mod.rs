@@ -706,6 +706,55 @@ pub async fn cancel_task(
 }
 
 #[tauri::command]
+pub async fn fetch_provider_models(
+    app: AppHandle,
+    state: State<'_, SidecarClient>,
+    base_url: String,
+    api_key: String,
+) -> Result<Value, CmdError> {
+    let client = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        client.call(
+            &app,
+            "providerModels",
+            json!({ "baseUrl": base_url, "apiKey": api_key }),
+            Duration::from_secs(20),
+        )
+    })
+    .await
+    .map_err(|error| CmdError::new("internal", format!("拉取模型失败：{error}")))?
+}
+
+#[tauri::command]
+pub fn start_star_office() -> Result<String, CmdError> {
+    let root = dev_project_root().ok_or_else(|| CmdError::new("internal", "找不到项目目录"))?;
+    let office_root = root.join("third_party/Star-Office-UI");
+    let script = office_root.join("backend/app.py");
+    if !script.is_file() {
+        return Err(CmdError::new("internal", "缺少 Star Office 后端脚本 backend/app.py"));
+    }
+    for candidate in ["python", "python3", "py"] {
+        let mut command = Command::new(candidate);
+        command
+            .arg(&script)
+            .current_dir(&office_root)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null());
+        #[cfg(windows)]
+        command.creation_flags(CREATE_NO_WINDOW);
+        match command.spawn() {
+            Ok(_) => return Ok(format!("已用 {candidate} 发出启动请求，请等几秒再打开。")),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
+            Err(error) => return Err(CmdError::new("internal", format!("启动失败：{error}"))),
+        }
+    }
+    Err(CmdError::new(
+        "internal",
+        "未检测到 Python 运行时。像素办公室是 Python 服务，请先安装 Python 3，再按 backend/requirements.txt 装依赖。",
+    ))
+}
+#[tauri::command]
 pub async fn retry_task(
     app: AppHandle,
     state: State<'_, SidecarClient>,

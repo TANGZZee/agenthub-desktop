@@ -103,6 +103,7 @@ export const RPC_METHODS = {
   taskCancel: "taskCancel",
   taskEvents: "taskEvents",
   taskRetry: "taskRetry",
+  providerModels: "providerModels",
 } as const;
 
 export type RpcMethod = (typeof RPC_METHODS)[keyof typeof RPC_METHODS];
@@ -160,6 +161,7 @@ export interface TaskListParams {}
 export interface TaskCancelParams { taskId: string; }
 export interface TaskEventsParams { taskId: string; limit?: number; }
 export interface TaskRetryParams { taskId: string; }
+export interface ProviderModelsParams { baseUrl: string; apiKey: string; }
 
 export interface ShutdownParams {}
 
@@ -179,6 +181,7 @@ export interface RpcParamsMap {
   taskCancel: TaskCancelParams;
   taskEvents: TaskEventsParams;
   taskRetry: TaskRetryParams;
+  providerModels: ProviderModelsParams;
 }
 
 export interface RpcResultMap {
@@ -193,6 +196,7 @@ export interface RpcResultMap {
   taskCancel: { task: import("./task-protocol").TaskRecordWire };
   taskEvents: { events: Array<{ eventId: string; taskId: string; eventType: string; payload: Record<string, unknown>; createdAt: string }> };
   taskRetry: { task: import("./task-protocol").TaskRecordWire };
+  providerModels: { models: string[]; error?: string };
 }
 
 export interface RpcError {
@@ -313,6 +317,7 @@ export const TAURI_COMMANDS = {
   cancelTask: "cancel_task",
   listTaskEvents: "list_task_events",
   retryTask: "retry_task",
+  fetchProviderModels: "fetch_provider_models",
 } as const;
 
 export type TauriCommand = (typeof TAURI_COMMANDS)[keyof typeof TAURI_COMMANDS];
