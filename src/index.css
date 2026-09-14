@@ -1366,3 +1366,12 @@ textarea {
 .task-timeline li div { display: grid; gap: 2px; }
 .task-timeline small { color: var(--text-tertiary); overflow-wrap: anywhere; }
 .catalog-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.settings-tabs { display: flex; gap: 8px; margin: 18px 0 8px; }
+.settings-tabs button { padding: 8px 12px; border: 1px solid var(--border-medium); border-radius: var(--radius-sm); background: var(--bg-primary); color: var(--text-secondary); font: inherit; cursor: pointer; }
+.settings-tabs button.active { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
+.settings-section { margin-top: 8px; padding-top: 8px; }
+.settings-section h3 { margin: 18px 0 4px; font-size: var(--text-subtitle); }
+.setting-text { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 16px 0; border-bottom: 1px solid var(--border-light); }
+.setting-text span { display: grid; gap: 3px; max-width: 52%; }
+.setting-text small { color: var(--text-secondary); }
+.setting-text input, .setting-text select { width: min(280px, 42%); padding: 8px 10px; border: 1px solid var(--border-medium); border-radius: var(--radius-sm); font: inherit; background: var(--bg-primary); color: var(--text-primary); }
