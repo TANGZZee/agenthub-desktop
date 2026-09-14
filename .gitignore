@@ -41,3 +41,7 @@ release/
 /*.bat
 /*.ps1
 .mcp.json
+
+# Local scratch (tests, caches, dumps)
+Temp/
+

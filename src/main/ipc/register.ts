@@ -436,6 +436,18 @@ import {
   cancelWebPreviewInspection,
   inspectWebPreview,
 } from "../web-preview-inspector";
+import {
+  dispatchWorkerTool,
+  getWorkerToolStatus,
+  setWorkerChangeListener,
+  startWorkerToolServer,
+  listAgentHubCatalog,
+  listAgentHubModelOptions,
+  installAgentHubSelection,
+  removeAgentHubSelection,
+  setAgentHubWorkerModel,
+  resetDefaultOrchestrator,
+} from "../agenthub";
 
 export interface IpcContext {
   activeRuns: Map<string, () => void>;
@@ -3549,4 +3561,36 @@ export function registerIpcHandlers(context: IpcContext): void {
       return sshReadLogs(conn.ssh, logFile, lines);
     return readLogs(logFile, lines);
   });
+
+  setWorkerChangeListener(() => {
+    getMainWindow()?.webContents.send("agenthub-worker-changed");
+  });
+  void startWorkerToolServer();
+  ipcMain.handle("agenthub-dispatch", (_event, tool: string, args?: unknown) =>
+    dispatchWorkerTool(tool, args),
+  );
+  ipcMain.handle("agenthub-tool-status", () => getWorkerToolStatus());
+  ipcMain.handle("agenthub-catalog-list", () => listAgentHubCatalog());
+  ipcMain.handle("agenthub-catalog-install", (_event, id: unknown) => {
+    const result = installAgentHubSelection(id);
+    resetDefaultOrchestrator();
+    getMainWindow()?.webContents.send("agenthub-worker-changed");
+    return result;
+  });
+  ipcMain.handle("agenthub-catalog-remove", (_event, id: unknown) => {
+    const result = removeAgentHubSelection(id);
+    resetDefaultOrchestrator();
+    getMainWindow()?.webContents.send("agenthub-worker-changed");
+    return result;
+  });
+  ipcMain.handle("agenthub-catalog-models", () => listAgentHubModelOptions());
+  ipcMain.handle(
+    "agenthub-catalog-set-model",
+    (_event, id: unknown, model: unknown) => {
+      const result = setAgentHubWorkerModel(id, model);
+      resetDefaultOrchestrator();
+      getMainWindow()?.webContents.send("agenthub-worker-changed");
+      return result;
+    },
+  );
 }

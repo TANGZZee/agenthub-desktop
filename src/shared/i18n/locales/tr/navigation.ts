@@ -17,6 +17,8 @@ export default {
   tools: "Araçlar",
   schedules: "Zamanlayıcı",
   kanban: "Kanban",
+  workers: "Workers",
+
   gateway: "Gateway",
   settings: "Ayarlar",
   collapseSidebar: "Kenar çubuğunu daralt",

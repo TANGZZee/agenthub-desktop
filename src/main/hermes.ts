@@ -25,6 +25,7 @@ import {
   hermesCliArgs,
   getEnhancedPath,
 } from "./installer";
+import { getWorkerToolClientEnv } from "./agenthub";
 import {
   getApiServerKey,
   getActiveConnection,
@@ -3507,7 +3508,9 @@ export function buildGatewayEnv(profile?: string): Record<string, string> {
     gatewayEnv.API_SERVER_KEY = resolvedApiServerKey;
   }
 
+  Object.assign(gatewayEnv, getWorkerToolClientEnv());
   return gatewayEnv;
+
 }
 
 function gatewayCliCommandArgs(

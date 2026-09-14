@@ -40,6 +40,13 @@ import type {
   SshHermesTargetInspection,
   SshDockerProvisionResult,
 } from "../shared/ssh-docker";
+import type {
+  WorkerToolName,
+  WorkerToolResponse,
+  WorkerToolStatus,
+  WorkerCatalogResult,
+  AgentHubModelOption,
+} from "../shared/agenthub";
 
 /**
  * Mirror of the renderer-side `CredentialPoolEntry` ambient type
@@ -1831,6 +1838,33 @@ const hermesAPI = {
     lines?: number,
   ): Promise<{ content: string; path: string }> =>
     ipcRenderer.invoke("read-logs", logFile, lines),
+
+  agenthubDispatch: (
+    tool: WorkerToolName | string,
+    args?: unknown,
+  ): Promise<WorkerToolResponse> =>
+    ipcRenderer.invoke("agenthub-dispatch", tool, args),
+  agenthubToolStatus: (): Promise<WorkerToolStatus> =>
+    ipcRenderer.invoke("agenthub-tool-status"),
+  agenthubCatalogList: (): Promise<WorkerCatalogResult> =>
+    ipcRenderer.invoke("agenthub-catalog-list"),
+  agenthubCatalogInstall: (id: string): Promise<WorkerCatalogResult> =>
+    ipcRenderer.invoke("agenthub-catalog-install", id),
+  agenthubCatalogRemove: (id: string): Promise<WorkerCatalogResult> =>
+    ipcRenderer.invoke("agenthub-catalog-remove", id),
+
+  agenthubCatalogModels: (): Promise<AgentHubModelOption[]> =>
+    ipcRenderer.invoke("agenthub-catalog-models"),
+  agenthubCatalogSetModel: (
+    id: string,
+    model: string | null,
+  ): Promise<WorkerCatalogResult> =>
+    ipcRenderer.invoke("agenthub-catalog-set-model", id, model),
+  onAgenthubWorkerChanged: (callback: () => void): (() => void) => {
+    const handler = (): void => callback();
+    ipcRenderer.on("agenthub-worker-changed", handler);
+    return () => ipcRenderer.removeListener("agenthub-worker-changed", handler);
+  },
 };
 
 if (process.contextIsolated) {

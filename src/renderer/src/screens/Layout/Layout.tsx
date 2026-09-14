@@ -31,6 +31,9 @@ import Office from "../Office/Office";
 import Providers from "../Providers/Providers";
 import Schedules from "../Schedules/Schedules";
 import Kanban from "../Kanban/Kanban";
+import Workers from "../Workers/Workers";
+
+
 import RemoteNotice from "../../components/RemoteNotice";
 import VerifyWarningBanner from "../../components/VerifyWarningBanner";
 import { useSettingsModal } from "../../components/settings/SettingsModalContext";
@@ -44,6 +47,7 @@ import {
   KeyRound,
   Timer,
   Kanban as KanbanIcon,
+  Bot,
   Download,
   PanelLeftClose,
   PanelLeftOpen,
@@ -63,6 +67,7 @@ type View =
   | "tools"
   | "schedules"
   | "kanban"
+  | "workers"
   | "gateway";
 
 const PINNED_NAV_ITEMS: { view: View; icon: LucideIcon; labelKey: string }[] = [
@@ -71,10 +76,12 @@ const PINNED_NAV_ITEMS: { view: View; icon: LucideIcon; labelKey: string }[] = [
   // "Manage profiles" action rather than a top-level nav item.
   { view: "office", icon: Building, labelKey: "navigation.office" },
   { view: "kanban", icon: KanbanIcon, labelKey: "navigation.kanban" },
+  { view: "workers", icon: Bot, labelKey: "navigation.workers" },
   // "skills" lives under the Discover tab (installed + community), so it's no
   // longer a top-level nav item.
   { view: "schedules", icon: Timer, labelKey: "navigation.schedules" },
 ];
+
 
 const FOOTER_NAV_ITEMS: { view: View; icon: LucideIcon; labelKey: string }[] = [
   { view: "providers", icon: KeyRound, labelKey: "navigation.providers" },
@@ -1024,7 +1031,14 @@ function Layout({
             </div>
           )}
 
+          {visitedViews.has("workers") && (
+            <div style={paneStyle("workers")}>
+              <Workers />
+            </div>
+          )}
+
           {visitedViews.has("gateway") && (
+
             <div style={paneStyle("gateway")}>
               {remoteMode ? (
                 <RemoteNotice feature="Gateway" />

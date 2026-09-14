@@ -17,6 +17,8 @@ export default {
   tools: "Narzędzia",
   schedules: "Harmonogramy",
   kanban: "Kanban",
+  workers: "Workers",
+
   gateway: "Bramka",
   settings: "Ustawienia",
   collapseSidebar: "Zwin pasek boczny",
