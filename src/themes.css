@@ -1,0 +1,278 @@
+html[data-theme="glass"] {
+  --bg-primary: rgba(255, 255, 255, 0.58);
+  --bg-secondary: rgba(255, 255, 255, 0.38);
+  --bg-tertiary: rgba(255, 255, 255, 0.28);
+  --border-light: rgba(255, 255, 255, 0.46);
+  --border-medium: rgba(255, 255, 255, 0.58);
+  --shadow-card: 0 8px 28px rgba(40, 70, 110, 0.08);
+  --shadow-float: 0 16px 40px rgba(40, 70, 110, 0.12);
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --glass-blur: blur(22px) saturate(160%);
+}
+
+html[data-theme="glass"] body {
+  background:
+    radial-gradient(1200px 640px at 0% -10%, rgba(120, 168, 230, 0.28), transparent 58%),
+    radial-gradient(900px 520px at 100% 110%, rgba(176, 198, 220, 0.34), transparent 52%),
+    #dfe7f1;
+}
+
+html[data-theme="glass"] .primary-shell {
+  background: transparent;
+}
+
+html[data-theme="glass"] .primary-sidebar,
+html[data-theme="glass"] .primary-topbar,
+html[data-theme="glass"] .prompt-area,
+html[data-theme="glass"] .task-rail,
+html[data-theme="glass"] .settings-panel,
+html[data-theme="glass"] .settings-form,
+html[data-theme="glass"] .native-info,
+html[data-theme="glass"] .office-cell,
+html[data-theme="glass"] .task-row,
+html[data-theme="glass"] .prompt-box,
+html[data-theme="glass"] .star-office-frame-wrap,
+html[data-theme="glass"] .guide-dialog {
+  background: var(--bg-primary);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-card);
+}
+
+html[data-theme="glass"] .primary-sidebar {
+  margin: 10px 0 10px 10px;
+  border-radius: var(--radius-lg);
+}
+
+html[data-theme="glass"] .nav-item.active {
+  background: rgba(0, 113, 227, 0.14);
+}
+
+html[data-theme="glass"] .primary-content.run,
+html[data-theme="glass"] .run-view,
+html[data-theme="glass"] .primary-main {
+  background: transparent;
+}
+
+html[data-theme="glass"] .run-output,
+html[data-theme="glass"] .run-output-scroll {
+  background: rgba(255, 255, 255, 0.42);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-radius: var(--radius-md);
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme="glass"] {
+    --bg-primary: rgba(22, 24, 30, 0.62);
+    --bg-secondary: rgba(22, 24, 30, 0.42);
+    --bg-tertiary: rgba(22, 24, 30, 0.3);
+    --border-light: rgba(255, 255, 255, 0.12);
+    --border-medium: rgba(255, 255, 255, 0.18);
+    --text-primary: #f4f6f8;
+    --text-secondary: #b4bcc6;
+    --shadow-card: 0 12px 36px rgba(0, 0, 0, 0.28);
+  }
+  html[data-theme="glass"] body {
+    background:
+      radial-gradient(1000px 560px at 0% 0%, rgba(70, 110, 170, 0.28), transparent 55%),
+      radial-gradient(800px 480px at 100% 100%, rgba(40, 60, 90, 0.4), transparent 50%),
+      #12151b;
+  }
+}
+
+html[data-theme="direct"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #ffffff;
+  --text-primary: #111111;
+  --text-secondary: #444444;
+  --text-tertiary: #888888;
+  --border-light: #111111;
+  --border-medium: #111111;
+  --accent: #111111;
+  --accent-hover: #000000;
+  --accent-subtle: #f3f3f3;
+  --text-on-accent: #ffffff;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --shadow-card: none;
+  --shadow-float: none;
+  --shadow-elevated: none;
+}
+
+html[data-theme="direct"] body,
+html[data-theme="direct"] .primary-shell,
+html[data-theme="direct"] .primary-main,
+html[data-theme="direct"] .primary-content,
+html[data-theme="direct"] .run-view,
+html[data-theme="direct"] .task-rail,
+html[data-theme="direct"] .settings-panel,
+html[data-theme="direct"] .settings-form,
+html[data-theme="direct"] .prompt-area {
+  background: #ffffff;
+}
+
+html[data-theme="direct"] .primary-sidebar {
+  background: #ffffff;
+  border-right: 1px solid #111111;
+}
+
+html[data-theme="direct"] .primary-topbar,
+html[data-theme="direct"] .prompt-area,
+html[data-theme="direct"] .task-rail {
+  border-color: #111111;
+  box-shadow: none;
+}
+
+html[data-theme="direct"] .brand-mark,
+html[data-theme="direct"] .nav-item.active,
+html[data-theme="direct"] .send-button:not(:disabled),
+html[data-theme="direct"] .button-primary {
+  background: #111111;
+  color: #ffffff;
+  border-radius: 0;
+}
+
+html[data-theme="direct"] .nav-item.active {
+  color: #ffffff;
+}
+
+html[data-theme="direct"] .office-cell,
+html[data-theme="direct"] .task-row,
+html[data-theme="direct"] .native-info,
+html[data-theme="direct"] .prompt-box,
+html[data-theme="direct"] .settings-form {
+  border: 1px solid #111111;
+  box-shadow: none;
+  background: #ffffff;
+}
+
+html[data-theme="direct"] .run-output,
+html[data-theme="direct"] .star-office-frame-wrap {
+  border: 1px solid #111111;
+  border-radius: 0;
+}
+
+html[data-theme="direct"] button,
+html[data-theme="direct"] input,
+html[data-theme="direct"] select,
+html[data-theme="direct"] textarea {
+  border-radius: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme="direct"] {
+    --bg-primary: #111111;
+    --bg-secondary: #111111;
+    --bg-tertiary: #111111;
+    --text-primary: #f5f5f5;
+    --text-secondary: #c8c8c8;
+    --text-tertiary: #8a8a8a;
+    --border-light: #f5f5f5;
+    --border-medium: #f5f5f5;
+    --accent: #f5f5f5;
+    --accent-hover: #ffffff;
+    --accent-subtle: #1c1c1c;
+    --text-on-accent: #111111;
+  }
+  html[data-theme="direct"] body,
+  html[data-theme="direct"] .primary-shell,
+  html[data-theme="direct"] .primary-main,
+  html[data-theme="direct"] .primary-content,
+  html[data-theme="direct"] .run-view,
+  html[data-theme="direct"] .task-rail,
+  html[data-theme="direct"] .settings-panel,
+  html[data-theme="direct"] .settings-form,
+  html[data-theme="direct"] .prompt-area,
+  html[data-theme="direct"] .primary-sidebar {
+    background: #111111;
+    color: #f5f5f5;
+  }
+  html[data-theme="direct"] .brand-mark,
+  html[data-theme="direct"] .nav-item.active,
+  html[data-theme="direct"] .send-button:not(:disabled),
+  html[data-theme="direct"] .button-primary {
+    background: #f5f5f5;
+    color: #111111;
+  }
+}
+
+.theme-switch {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--border-medium);
+  background: var(--bg-tertiary);
+}
+.theme-switch button {
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: var(--text-tiny);
+}
+.theme-switch button.active {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+html[data-theme="glass"] .theme-switch {
+  border-radius: 999px;
+  background: rgba(255,255,255,0.35);
+  backdrop-filter: blur(16px);
+}
+html[data-theme="glass"] .theme-switch button.active {
+  border-radius: 999px;
+}
+html[data-theme="direct"] .theme-switch,
+html[data-theme="direct"] .theme-switch button.active {
+  border-radius: 0;
+}
+
+html[data-theme="glass"] .primary-sidebar {
+  margin: 0;
+  border: 0;
+  border-right: 1px solid var(--border-light);
+  border-radius: 0;
+  background: var(--bg-secondary);
+}
+html[data-theme="glass"] .primary-topbar,
+html[data-theme="glass"] .prompt-area {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--bg-secondary);
+}
+html[data-theme="glass"] .primary-topbar { border-bottom: 1px solid var(--border-light); }
+html[data-theme="glass"] .prompt-area { border-top: 1px solid var(--border-light); }
+html[data-theme="glass"] .task-rail,
+html[data-theme="glass"] .chat-nav {
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--bg-secondary);
+}
+html[data-theme="glass"] .task-rail { border-left: 1px solid var(--border-light); }
+html[data-theme="glass"] .chat-nav { border-right: 1px solid var(--border-light); }
+html[data-theme="glass"] .theme-switch,
+html[data-theme="glass"] .theme-switch button.active {
+  border-radius: 8px;
+}
+html[data-theme="glass"] .run-output,
+html[data-theme="glass"] .run-output-scroll {
+  border-radius: 12px;
+}
+html[data-theme="glass"] .chat-new,
+html[data-theme="glass"] .prompt-box,
+html[data-theme="glass"] .task-row,
+html[data-theme="glass"] .office-cell,
+html[data-theme="glass"] .settings-form,
+html[data-theme="glass"] .native-info {
+  border-radius: 12px;
+}
