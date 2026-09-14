@@ -31,7 +31,7 @@ export const PI_TOOLS = [
 
 export interface HermesNativeSettings {
   agentId: "hermes";
-  model: string;
+  modelId: string;
   provider: string;
   reasoningEffort: HermesReasoningEffort;
   maxTurns: number;
@@ -53,14 +53,14 @@ export interface HermesNativeSettings {
 export interface PiNativeSettings {
   agentId: "pi";
   defaultProvider: string;
-  defaultModel: string;
+  modelId: string;
   enabledTools: string[];
   sessionEnabled: boolean;
 }
 
 export interface CodexNativeSettings {
   agentId: "codex";
-  model: string;
+  modelId: string;
   workDirectory: string;
   sandbox: CodexSandboxMode;
 }
@@ -80,7 +80,7 @@ export function createDefaultNativeSettings(agentId: AgentId): AgentNativeWorkSe
     return {
       agentId: "pi",
       defaultProvider: "",
-      defaultModel: "",
+      modelId: "",
       enabledTools: ["read", "grep", "find", "ls"],
       sessionEnabled: false,
     };
@@ -88,7 +88,7 @@ export function createDefaultNativeSettings(agentId: AgentId): AgentNativeWorkSe
   if (agentId === "codex") {
     return {
       agentId: "codex",
-      model: "",
+      modelId: "",
       workDirectory: "",
       sandbox: "read-only",
     };
@@ -98,7 +98,7 @@ export function createDefaultNativeSettings(agentId: AgentId): AgentNativeWorkSe
   }
   return {
     agentId: "hermes",
-    model: "",
+    modelId: "",
     provider: "",
     reasoningEffort: "medium",
     maxTurns: 90,

@@ -3,6 +3,7 @@ import { Check, Plug, Puzzle, Save, ShieldCheck, Sparkles } from "lucide-react";
 import type { CatalogAgent } from "../hooks/useSidecar";
 import { createDefaultAgentHubSettings, type AgentHubAgentSettings } from "../../shared/agent-settings";
 import { BUILTIN_PI_PLUGINS, BUILTIN_SHARED_MCP, BUILTIN_SHARED_SKILLS } from "../../shared/capability-catalog";
+import { DEFAULT_MODEL_CATALOG, loadModelCatalog, saveModelCatalog, type CatalogModel } from "../../shared/model-catalog";
 import {
   createDefaultNativeSettings,
   HERMES_TOOLSETS,
@@ -17,7 +18,7 @@ import {
 } from "../../shared/native-settings";
 
 interface AgentSettingsViewProps { agents: CatalogAgent[]; }
-type Section = "agent" | "plugins" | "skills" | "mcp";
+type Section = "agent" | "models" | "plugins" | "skills" | "mcp";
 type StoredHubSettings = Record<string, AgentHubAgentSettings>;
 type StoredNativeSettings = Record<string, AgentNativeWorkSettings>;
 type CapabilityState = Record<string, boolean>;
@@ -44,6 +45,7 @@ export function AgentSettingsView({ agents }: AgentSettingsViewProps) {
   const [capabilityState, setCapabilityState] = useState<CapabilityState>(() => loadJson(CAPABILITIES_KEY, {}));
   const [saved, setSaved] = useState(false);
   const [guide, setGuide] = useState<{ name: string; permissions: string[] } | null>(null);
+  const [catalog, setCatalog] = useState<CatalogModel[]>(() => loadModelCatalog());
 
   const hub = allHub[selected] ?? createDefaultAgentHubSettings(selected);
   const native = allNative[selected] ?? createDefaultNativeSettings(selected);
@@ -137,6 +139,10 @@ export function AgentSettingsView({ agents }: AgentSettingsViewProps) {
               <Puzzle size={15} />Pi 插件
             </button>
           )}
+          <h2 className="settings-group-title">公共配置</h2>
+          <button type="button" className={`settings-agent-item ${section === "models" ? "active" : ""}`} onClick={() => setSection("models")}>
+            <Sparkles size={15} />模型配置
+          </button>
           <h2 className="settings-group-title">共享能力</h2>
           <button type="button" className={`settings-agent-item ${section === "skills" ? "active" : ""}`} onClick={() => setSection("skills")}>
             <Sparkles size={15} />共享 Skill
@@ -157,10 +163,12 @@ export function AgentSettingsView({ agents }: AgentSettingsViewProps) {
               saved={saved}
               onUpdateHub={updateHub}
               onUpdateNative={updateNative}
+              catalog={catalog}
               onSave={save}
               onReset={reset}
             />
           )}
+          {section === "models" && <ModelCatalogPanel catalog={catalog} onChange={(next) => { setCatalog(next); saveModelCatalog(next); }} />}
           {section === "plugins" && <CapabilityCatalog title="Pi 插件" icon={<Puzzle size={20} />} items={piItems} onToggle={toggleCapability} onGuide={setGuide} />}
           {section === "skills" && <CapabilityCatalog title="共享 Skill" icon={<Sparkles size={20} />} items={skillItems} onToggle={toggleCapability} onGuide={setGuide} />}
           {section === "mcp" && <CapabilityCatalog title="共享 MCP" icon={<Plug size={20} />} items={mcpItems} onToggle={toggleCapability} onGuide={setGuide} />}
@@ -181,10 +189,11 @@ function AgentSettingsPanel(props: {
   saved: boolean;
   onUpdateHub: <K extends keyof AgentHubAgentSettings>(key: K, value: AgentHubAgentSettings[K]) => void;
   onUpdateNative: (next: AgentNativeWorkSettings) => void;
+  catalog: CatalogModel[];
   onSave: () => void;
   onReset: () => void;
 }) {
-  const { agentName, agent, tab, onTabChange, hub, native, saved, onUpdateHub, onUpdateNative, onSave, onReset } = props;
+  const { agentName, agent, tab, onTabChange, hub, native, saved, onUpdateHub, onUpdateNative, onSave, onReset, catalog } = props;
   return (
     <>
       <div className="settings-panel-title">
@@ -210,7 +219,7 @@ function AgentSettingsPanel(props: {
         <button type="button" className={tab === "hub" ? "active" : ""} onClick={() => onTabChange("hub")}>AgentHub 调度设置</button>
       </div>
       {tab === "native" ? (
-        <NativeSettingsForm native={native} onChange={onUpdateNative} />
+        <NativeSettingsForm native={native} onChange={onUpdateNative} catalog={catalog} />
       ) : (
         <div className="settings-form">
           <Toggle label="启用此 Agent" help="关闭后 Hermes 不会把新任务派给它。" value={hub.enabled} onChange={(value) => onUpdateHub("enabled", value)} />
@@ -232,10 +241,14 @@ function AgentSettingsPanel(props: {
   );
 }
 
-function NativeSettingsForm({ native, onChange }: { native: AgentNativeWorkSettings; onChange: (next: AgentNativeWorkSettings) => void }) {
-  if (native.agentId === "hermes") return <HermesNativeForm value={native} onChange={onChange} />;
-  if (native.agentId === "pi") return <PiNativeForm value={native} onChange={onChange} />;
-  if (native.agentId === "codex") return <CodexNativeForm value={native} onChange={onChange} />;
+function modelOptions(catalog: CatalogModel[]): Array<{ value: string; label: string }> {
+  return [{ value: "", label: "跟随公共默认" }, ...catalog.map((item) => ({ value: item.id, label: `${item.label}（${item.provider}）` }))];
+}
+
+function NativeSettingsForm({ native, onChange, catalog }: { native: AgentNativeWorkSettings; onChange: (next: AgentNativeWorkSettings) => void; catalog: CatalogModel[] }) {
+  if (native.agentId === "hermes") return <HermesNativeForm value={native} onChange={onChange} catalog={catalog} />;
+  if (native.agentId === "pi") return <PiNativeForm value={native} onChange={onChange} catalog={catalog} />;
+  if (native.agentId === "codex") return <CodexNativeForm value={native} onChange={onChange} catalog={catalog} />;
   return <ClaudeNativeForm value={native} onChange={onChange} />;
 }
 
@@ -248,12 +261,12 @@ function toggleList(current: string[], id: string, enabled: boolean): string[] {
   return current.filter((item) => item !== id);
 }
 
-function HermesNativeForm({ value, onChange }: { value: HermesNativeSettings; onChange: (next: HermesNativeSettings) => void }) {
+function HermesNativeForm({ value, onChange, catalog }: { value: HermesNativeSettings; onChange: (next: HermesNativeSettings) => void; catalog: CatalogModel[] }) {
   const set = (key: keyof HermesNativeSettings, next: HermesNativeSettings[keyof HermesNativeSettings]) => onChange({ ...value, [key]: next } as HermesNativeSettings);
   return (
     <div className="settings-form">
       <Section title="模型与服务">
-        <TextField label="默认模型" help="对应 Hermes Settings → Model。不填写密钥。" value={value.model} onChange={(next) => set("model", next)} />
+        <SelectField label="默认模型" help="从公共模型配置里选。密钥不放在这里。" value={value.modelId} options={modelOptions(catalog)} onChange={(next) => set("modelId", next)} />
         <TextField label="服务提供方" help="例如 openrouter、anthropic、openai。密钥仍放在 Hermes 自己的保险柜里。" value={value.provider} onChange={(next) => set("provider", next)} />
         <SelectField label="推理强度" help="none / low / medium / high。" value={value.reasoningEffort} options={[{ value: "none", label: "关闭" }, { value: "low", label: "低" }, { value: "medium", label: "中" }, { value: "high", label: "高" }]} onChange={(next) => set("reasoningEffort", next as HermesNativeSettings["reasoningEffort"])} />
         <NumberField label="单次最大回合" value={value.maxTurns} min={1} max={200} onChange={(next) => set("maxTurns", next)} />
@@ -293,13 +306,13 @@ function HermesNativeForm({ value, onChange }: { value: HermesNativeSettings; on
   );
 }
 
-function PiNativeForm({ value, onChange }: { value: PiNativeSettings; onChange: (next: PiNativeSettings) => void }) {
+function PiNativeForm({ value, onChange, catalog }: { value: PiNativeSettings; onChange: (next: PiNativeSettings) => void; catalog: CatalogModel[] }) {
   const set = (key: keyof PiNativeSettings, next: PiNativeSettings[keyof PiNativeSettings]) => onChange({ ...value, [key]: next } as PiNativeSettings);
   return (
     <div className="settings-form">
       <Section title="模型与服务">
         <TextField label="默认提供方" help="对应 Pi 的 defaultProvider。不填写密钥。" value={value.defaultProvider} onChange={(next) => set("defaultProvider", next)} />
-        <TextField label="默认模型" help="对应 defaultModel。" value={value.defaultModel} onChange={(next) => set("defaultModel", next)} />
+        <SelectField label="默认模型" help="从公共模型配置里选。" value={value.modelId} options={modelOptions(catalog)} onChange={(next) => set("modelId", next)} />
       </Section>
       <Section title="会话设置">
         <Toggle label="保留会话" help="关闭时相当于 --no-session，每次任务单独进行。" value={value.sessionEnabled} onChange={(next) => set("sessionEnabled", next)} />
@@ -316,12 +329,12 @@ function PiNativeForm({ value, onChange }: { value: PiNativeSettings; onChange: 
   );
 }
 
-function CodexNativeForm({ value, onChange }: { value: CodexNativeSettings; onChange: (next: CodexNativeSettings) => void }) {
+function CodexNativeForm({ value, onChange, catalog }: { value: CodexNativeSettings; onChange: (next: CodexNativeSettings) => void; catalog: CatalogModel[] }) {
   const set = (key: keyof CodexNativeSettings, next: CodexNativeSettings[keyof CodexNativeSettings]) => onChange({ ...value, [key]: next } as CodexNativeSettings);
   return (
     <div className="settings-form">
       <Section title="模型与服务">
-        <TextField label="默认模型" help="对应 Codex 的 model。不填写密钥。" value={value.model} onChange={(next) => set("model", next)} />
+        <SelectField label="默认模型" help="从公共模型配置里选。" value={value.modelId} options={modelOptions(catalog)} onChange={(next) => set("modelId", next)} />
       </Section>
       <Section title="沙箱权限">
         <SelectField label="沙箱" help="AgentHub 后台运行默认只读。工作区写入以后才会接到启动参数。不提供危险绕过。" value={value.sandbox} options={[{ value: "read-only", label: "只读" }, { value: "workspace-write", label: "允许写入工作区" }]} onChange={(next) => set("sandbox", next as CodexNativeSettings["sandbox"])} />
@@ -429,6 +442,53 @@ function InstallGuide({ name, permissions, onClose }: { name: string; permission
           <button type="button" className="button button-primary" disabled>开始安装（即将支持）</button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ModelCatalogPanel({ catalog, onChange }: { catalog: CatalogModel[]; onChange: (next: CatalogModel[]) => void }) {
+  const [draft, setDraft] = useState({ id: "", label: "", provider: "cc-switch" });
+  function update(index: number, patch: Partial<CatalogModel>) {
+    onChange(catalog.map((item, i) => (i === index ? { ...item, ...patch } : item)));
+  }
+  function remove(index: number) {
+    onChange(catalog.filter((_, i) => i !== index));
+  }
+  function add() {
+    const id = draft.id.trim() || draft.label.trim().toLowerCase().replace(/\s+/g, "-");
+    if (!id) return;
+    onChange([...catalog, { id, label: draft.label.trim() || id, provider: draft.provider.trim() || "custom" }]);
+    setDraft({ id: "", label: "", provider: "cc-switch" });
+  }
+  return (
+    <div className="capability-catalog">
+      <div className="settings-panel-title">
+        <div>
+          <h2>公共模型配置</h2>
+          <p>所有 Agent 的单独模型设置都从这里选。这里不保存密钥。</p>
+        </div>
+      </div>
+      <div className="capability-list">
+        {catalog.map((item, index) => (
+          <article className="capability-card" key={item.id}>
+            <div className="model-card-fields">
+              <label><span>显示名</span><input value={item.label} onChange={(e) => update(index, { label: e.currentTarget.value })} /></label>
+              <label><span>模型 ID</span><input value={item.id} onChange={(e) => update(index, { id: e.currentTarget.value })} /></label>
+              <label><span>提供方</span><input value={item.provider} onChange={(e) => update(index, { provider: e.currentTarget.value })} /></label>
+            </div>
+            <div className="capability-card-side">
+              <button type="button" className="button button-secondary" onClick={() => remove(index)}>移除</button>
+            </div>
+          </article>
+        ))}
+      </div>
+      <div className="model-add-row">
+        <input placeholder="模型 ID，如 gpt-5.6" value={draft.id} onChange={(e) => setDraft({ ...draft, id: e.currentTarget.value })} />
+        <input placeholder="显示名，如 GPT-5.6" value={draft.label} onChange={(e) => setDraft({ ...draft, label: e.currentTarget.value })} />
+        <input placeholder="提供方" value={draft.provider} onChange={(e) => setDraft({ ...draft, provider: e.currentTarget.value })} />
+        <button type="button" className="button button-primary" onClick={add}>加入公共模型</button>
+      </div>
+      <p className="catalog-note">默认提供 {DEFAULT_MODEL_CATALOG.length} 个常用模型。移除只影响 AgentHub 的选择列表，不会删除真实服务里的模型。</p>
     </div>
   );
 }

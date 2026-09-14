@@ -36,6 +36,25 @@ function detailFor(agent: CatalogAgent, runtime: AgentRuntime | undefined, task?
 export function OfficeView({ agents, runtimes, refreshSignal }: OfficeViewProps) {
   const [tasks, setTasks] = useState<TaskRecordWire[]>([]);
   const [pixelOn, setPixelOn] = useState(false);
+  const [pixelError, setPixelError] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
+
+  async function togglePixel() {
+    if (pixelOn) {
+      setPixelOn(false);
+      return;
+    }
+    setChecking(true);
+    setPixelError(null);
+    try {
+      await fetch("http://127.0.0.1:19000/health", { mode: "no-cors" });
+      setPixelOn(true);
+    } catch {
+      setPixelError("连不上 127.0.0.1:19000。请先在本机启动 Star Office 本地服务，再打开像素办公室。");
+    } finally {
+      setChecking(false);
+    }
+  }
   useEffect(() => {
     let active = true;
     const load = async () => {
@@ -80,8 +99,8 @@ export function OfficeView({ agents, runtimes, refreshSignal }: OfficeViewProps)
             <p>可选模块。需要先在本机启动 Star Office 服务，再在这里打开。</p>
           </div>
           <div className="office-actions">
-            <button type="button" className="button button-secondary" onClick={() => setPixelOn((value) => !value)}>
-              {pixelOn ? "关闭像素办公室" : "打开像素办公室"}
+            <button type="button" className="button button-secondary" disabled={checking} onClick={() => void togglePixel()}>
+              {checking ? "检查中" : pixelOn ? "关闭像素办公室" : "打开像素办公室"}
             </button>
             <a className="text-button" href="http://127.0.0.1:19000" target="_blank" rel="noreferrer">
               <ExternalLink size={14} />单独打开
@@ -93,7 +112,10 @@ export function OfficeView({ agents, runtimes, refreshSignal }: OfficeViewProps)
             <iframe title="Star 像素办公室" src="http://127.0.0.1:19000" className="star-office-frame" />
           </div>
         ) : (
-          <p className="office-idle">未打开。服务没启动时不会显示灰色失败页。</p>
+          <>
+            {pixelError && <p className="inline-error">{pixelError}</p>}
+            <p className="office-idle">未打开。会先检查服务是否在 19000 端口，连不上就不会显示灰色失败页。</p>
+          </>
         )}
       </section>
     </div>
