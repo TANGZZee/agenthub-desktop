@@ -529,7 +529,8 @@ export class AgentPool {
     const agents: AgentInfo[] = [];
 
     const configuredAgents = [...config.agents.values()];
-    const probes = await Promise.all(configuredAgents.map((agent) => probeAgent(agent)));
+    const settled = await Promise.allSettled(configuredAgents.map((agent) => probeAgent(agent)));
+    const probes = settled.map((item, index) => item.status === "fulfilled" ? item.value : { installed: false, canStart: false, version: null, executablePath: configuredAgents[index].command, status: "failed" as const, reason: "探测异常" });
     configuredAgents.forEach((agent, index) => {
       const entry = this.entries.get(agent.id);
       agents.push({

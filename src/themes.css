@@ -235,3 +235,44 @@ html[data-theme="direct"] .theme-switch,
 html[data-theme="direct"] .theme-switch button.active {
   border-radius: 0;
 }
+
+html[data-theme="glass"] .primary-sidebar {
+  margin: 0;
+  border: 0;
+  border-right: 1px solid var(--border-light);
+  border-radius: 0;
+  background: var(--bg-secondary);
+}
+html[data-theme="glass"] .primary-topbar,
+html[data-theme="glass"] .prompt-area {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--bg-secondary);
+}
+html[data-theme="glass"] .primary-topbar { border-bottom: 1px solid var(--border-light); }
+html[data-theme="glass"] .prompt-area { border-top: 1px solid var(--border-light); }
+html[data-theme="glass"] .task-rail,
+html[data-theme="glass"] .chat-nav {
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--bg-secondary);
+}
+html[data-theme="glass"] .task-rail { border-left: 1px solid var(--border-light); }
+html[data-theme="glass"] .chat-nav { border-right: 1px solid var(--border-light); }
+html[data-theme="glass"] .theme-switch,
+html[data-theme="glass"] .theme-switch button.active {
+  border-radius: 8px;
+}
+html[data-theme="glass"] .run-output,
+html[data-theme="glass"] .run-output-scroll {
+  border-radius: 12px;
+}
+html[data-theme="glass"] .chat-new,
+html[data-theme="glass"] .prompt-box,
+html[data-theme="glass"] .task-row,
+html[data-theme="glass"] .office-cell,
+html[data-theme="glass"] .settings-form,
+html[data-theme="glass"] .native-info {
+  border-radius: 12px;
+}

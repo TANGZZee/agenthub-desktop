@@ -1684,3 +1684,27 @@ html[data-theme="direct"] .chat-search,
 html[data-theme="direct"] .chat-tabs button {
   border-radius: 0;
 }
+@media (max-width: 1100px) {
+  .chat-workspace,
+  .chat-workspace.with-tasks {
+    grid-template-columns: 188px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+  .chat-nav { grid-row: 1; }
+  .chat-main { grid-row: 1; }
+  .task-rail {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    max-height: 34%;
+    border-left: 0;
+    border-top: 1px solid var(--border-light);
+  }
+}
+@media (max-width: 860px) {
+  .chat-workspace,
+  .chat-workspace.with-tasks {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .chat-nav { display: none; }
+  .chat-main { grid-column: 1; }
+}
