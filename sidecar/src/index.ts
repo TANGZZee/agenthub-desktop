@@ -1,4 +1,4 @@
-import { defaultDatabasePath, persistTask, taskPayload } from "./persistence";
+import { defaultDatabasePath, persistTask, restoreTasks, taskPayload } from "./persistence";
 import { TaskRepository } from "./persistence/repository";
 import { resolve } from "node:path";
 import { officeDetailForPhase, officeStateForPhase } from "../../shared/office-status";
@@ -16,6 +16,7 @@ const configStore = new ConfigStore(configPath);
 const initialConfig = configStore.getSnapshot();
 const taskQueue = new TaskQueue({ cwd: process.cwd(), availableWorkers: [...initialConfig.agents.keys()] });
 const repository = new TaskRepository(defaultDatabasePath());
+for (const restored of restoreTasks(repository)) { if (!["succeeded", "failed", "cancelled"].includes(restored.status)) restored.status = "failed"; }
 function recordTask(task: ReturnType<TaskQueue["get"]>, eventType: string, payload: Record<string, unknown> = {}): void { if (!task) return; persistTask(repository, task); repository.addEvent(task.taskId, eventType, { ...taskPayload(task), ...payload }); }
 function startQueuedTask(taskId: string): void { const task = taskQueue.get(taskId); if (!task || task.status !== "queued") return; const runId = Date.now(); try { const started = taskQueue.start(taskId, runId); recordTask(started, "taskStarted"); repository.addAttempt(taskId, task.assignedWorkerId, runId); void pool.startAgent({ agentId: task.assignedWorkerId, prompt: task.description, model: null, runId }).catch(() => { try { const failed = taskQueue.finish(taskId, "failed"); recordTask(failed, "taskFailed"); } catch { /* already terminal */ } }); } catch { try { const failed = taskQueue.finish(taskId, "failed"); recordTask(failed, "taskFailed"); } catch { /* already terminal */ } } }
 const starOffice = new StarOfficeClient();
