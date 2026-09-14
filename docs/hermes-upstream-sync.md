@@ -90,9 +90,21 @@ git merge --abort          # 合并进行中
 git reset --hard ORIG_HEAD # 合并已提交但验证失败
 ```
 
+## 历史谱系（2026-02 重建）
+
+最初的迁移分支是从旧 Tauri 历史长出的孤儿提交，与上游没有共同祖先，`git merge-base`
+直接失败、永远无法正常合并。已用树对象嫁接重建为
+`upstream/main (cff1f44) -> 基线 -> AgentHub -> 同步工具`，重建前后**工作树逐字节
+相同**（`git diff` 为空），原孤儿历史保存在 `backup/pre-rebase` 分支。今后
+`npm run sync:upstream` 能正常识别合并基准。
+
+两个已知的无害差异（Windows 检出产物，保持原样）：上游 `.claude/skills/` 的两个
+符号链接在本机缺失；`build/linux-after-install.sh` 权限位为 644。
+
 ## 现状快照（2026-02）
 
-- 基线：上游 `cff1f44`（0.7.7），`merge-base` 与上游 HEAD 一致，尚无新上游提交。
-- 我们：`migration/hermes-desktop-base` @ `27229a1`（AgentHub 全量）已推送；
-  `legacy/tauri-agenthub` @ `3015d41`（旧版 18 个提交）已推送。
-- `lat` CLI 未安装：`lat check` 目前靠脚本自动跳过；安装后自动纳入验证。
+- 基线：上游 `cff1f44`（0.7.7），`merge-base` 已重建并与上游 HEAD 一致，尚无新上游提交。
+- 我们：`migration/hermes-desktop-base` 已推送（AgentHub 全量 + 同步工具）；
+  `legacy/tauri-agenthub` @ `3015d41`（旧版 18 个提交）已推送；
+  `backup/pre-rebase` 为嫁接前的孤儿历史存档。
+- `lat` CLI 未安装：`lat check` 由脚本自动跳过；安装后自动纳入验证。
