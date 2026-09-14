@@ -1,6 +1,7 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Bot, Building2, LayoutDashboard, Terminal, UsersRound } from "lucide-react";
 import type { SidecarDisplayStatus } from "../hooks/useSidecar";
+import { applyTheme, readStoredTheme, type AppTheme } from "../theme";
 
 export type AppView = "run" | "office" | "diagnostic" | "agents";
 
@@ -21,6 +22,11 @@ const TITLES: Record<AppView, string> = {
 };
 
 export function AppShell({ activeView, onViewChange, sidecar, statusList, promptInput, children }: AppShellProps) {
+  const [theme, setTheme] = useState<AppTheme>(() => readStoredTheme());
+  function chooseTheme(next: AppTheme) {
+    setTheme(next);
+    applyTheme(next);
+  }
   return (
     <div className="primary-shell">
       <aside className="primary-sidebar" aria-label="主导航">
@@ -47,7 +53,13 @@ export function AppShell({ activeView, onViewChange, sidecar, statusList, prompt
       <section className="primary-main">
         <header className="primary-topbar">
           <div className="topbar-title">{TITLES[activeView]}</div>
-          {sidecar.version && <span className="sidecar-version">{sidecar.available === false ? "Sidecar 未连接" : `Sidecar ${sidecar.version}`}</span>}
+          <div className="topbar-tools">
+            <div className="theme-switch" role="group" aria-label="界面风格">
+              <button type="button" className={theme === "glass" ? "active" : ""} onClick={() => chooseTheme("glass")}>玻璃拟态</button>
+              <button type="button" className={theme === "direct" ? "active" : ""} onClick={() => chooseTheme("direct")}>极简直给</button>
+            </div>
+            {sidecar.version && <span className="sidecar-version">{sidecar.available === false ? "Sidecar 未连接" : `Sidecar ${sidecar.version}`}</span>}
+          </div>
         </header>
         {sidecar.jobObject === false && (
           <div className="degraded-banner" role="status">未能接管进程组。关闭软件后如果还有残留进程，请在任务管理器里结束。</div>
