@@ -101,6 +101,7 @@ export const RPC_METHODS = {
   taskSubmit: "taskSubmit",
   taskList: "taskList",
   taskCancel: "taskCancel",
+  taskEvents: "taskEvents",
 } as const;
 
 export type RpcMethod = (typeof RPC_METHODS)[keyof typeof RPC_METHODS];
@@ -156,6 +157,7 @@ export interface ListAgentsRpcResult {
 export interface TaskSubmitParams { proposal: import("./task-protocol").TaskProposal; }
 export interface TaskListParams {}
 export interface TaskCancelParams { taskId: string; }
+export interface TaskEventsParams { taskId: string; limit?: number; }
 
 export interface ShutdownParams {}
 
@@ -173,6 +175,7 @@ export interface RpcParamsMap {
   taskSubmit: TaskSubmitParams;
   taskList: TaskListParams;
   taskCancel: TaskCancelParams;
+  taskEvents: TaskEventsParams;
 }
 
 export interface RpcResultMap {
@@ -185,6 +188,7 @@ export interface RpcResultMap {
   taskSubmit: { accepted: boolean; reasons: string[]; envelope?: import("./task-protocol").TaskEnvelope };
   taskList: { tasks: Array<import("./task-protocol").TaskRecordWire> };
   taskCancel: { task: import("./task-protocol").TaskRecordWire };
+  taskEvents: { events: Array<{ eventId: string; taskId: string; eventType: string; payload: Record<string, unknown>; createdAt: string }> };
 }
 
 export interface RpcError {
@@ -303,6 +307,7 @@ export const TAURI_COMMANDS = {
   submitTask: "submit_task",
   listTasks: "list_tasks",
   cancelTask: "cancel_task",
+  listTaskEvents: "list_task_events",
 } as const;
 
 export type TauriCommand = (typeof TAURI_COMMANDS)[keyof typeof TAURI_COMMANDS];

@@ -687,6 +687,25 @@ pub async fn cancel_task(
 }
 
 #[tauri::command]
+pub async fn list_task_events(
+    app: AppHandle,
+    state: State<'_, SidecarClient>,
+    task_id: String,
+    limit: Option<u32>,
+) -> Result<Value, CmdError> {
+    let client = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        client.call(
+            &app,
+            "taskEvents",
+            json!({ "taskId": task_id, "limit": limit.unwrap_or(100) }),
+            Duration::from_secs(10),
+        )
+    })
+    .await
+    .map_err(|error| CmdError::new("internal", format!("读取任务时间线失败：{error}")))?
+}
+#[tauri::command]
 pub async fn list_agents(
     app: AppHandle,
     state: State<'_, SidecarClient>,
