@@ -23,6 +23,7 @@ import {
 } from "./model";
 import type { ResolvedAgentConfig } from "./types";
 import { probeAgent } from "./probe";
+import { adapterRegistry } from "./adapter-registry";
 
 export const STOP_TIMEOUT_MS = 3_000;
 
@@ -145,6 +146,10 @@ export class AgentPool {
       );
     }
 
+    if (!agent.enabled) {
+      throw new RpcError("agentNotFound", `Agent "${agentId}" 已在配置中停用，当前仅用于展示`);
+    }
+
     if (!agent.configured) {
       throw new RpcError(
         "agentNotFound",
@@ -256,7 +261,12 @@ export class AgentPool {
       throw new RpcError("internal", "启动请求已被取消");
     }
 
-    const processHandle = startAgentProcess(agent, injection.spawnEnv, {
+    const adapter = adapterRegistry.get(agent.id);
+    const launchAgent = adapter && agent.id !== "hermes"
+      ? { ...agent, args: adapter.buildArgs({ taskId: String(params.runId), prompt: params.prompt, model: resolved.model, cwd: agent.cwd, toolPolicy: agent.id === "pi" ? ["read", "grep", "find", "ls"] : undefined }, { id: agent.id, label: agent.label, defaultModel: resolved.model, modelAliases: agent.modelAliases, configured: agent.configured, phase: "starting", runId: params.runId, resolvedModel: resolved.model, probe: { installed: true, canStart: true, version: null, executablePath: null, status: "confirmed" } }) }
+      : agent;
+
+    const processHandle = startAgentProcess(launchAgent, injection.spawnEnv, {
       onOutput: (stream, line) => {
         this.notify.output({
           runId: params.runId,

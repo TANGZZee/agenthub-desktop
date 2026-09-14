@@ -17,6 +17,8 @@ export type TemplateVariable = "model" | "base_url" | "api_key";
  * command 和 args 会原样交给 Node 的 spawn，不做路径替换。
  */
 export interface AgentConfig {
+  /** false 表示仅展示，不允许被调度启动。 */
+  enabled?: boolean;
   label: string;
   command: string;
   args: string[];
@@ -61,6 +63,8 @@ export interface AgentsConfig {
  * configured=false 时其余可执行字段仍保留为安全默认值，便于界面完整展示。
  */
 export interface ResolvedAgentConfig {
+  /** false 表示仅展示，不允许被调度启动。 */
+  enabled: boolean;
   id: string;
   label: string;
   command: string;

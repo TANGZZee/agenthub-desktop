@@ -149,6 +149,7 @@ function resolveAgent(
   const args = Array.isArray(agent.args)
     ? agent.args.filter((item): item is string => typeof item === "string")
     : [];
+  const enabled = agent.enabled !== false;
   const defaultModel = isNonEmptyString(agent.default_model)
     ? agent.default_model
     : "";
@@ -201,6 +202,7 @@ function resolveAgent(
     modelAliases: aliases,
     modelsByAlias,
     cwd,
+    enabled,
     startDelayMs: readDelay(agent.start_delay_ms),
     stopDelayMs: readDelay(agent.stop_delay_ms),
     envTemplates: envTemplates ?? {},

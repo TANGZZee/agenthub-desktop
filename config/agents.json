@@ -11,9 +11,10 @@
 
   "agents": {
     "hermes": {
-      "label": "Hermes（大管家）",
-      "command": "node",
-      "args": ["scripts/env-dump.js"],
+      "label": "Hermes（大管家·安全占位）",
+      "command": "C:/Users/Tang/AppData/Local/hermes/bin/hermes.exe",
+      "enabled": false,
+      "args": [],
       "default_model": "balanced",
       "cwd": "..",
       // 仅用于测试/演示：把“正在启动”或“正在终止”状态延长指定毫秒数。
@@ -22,27 +23,28 @@
       "stop_delay_ms": 0
     },
     "pi": {
-      "label": "Pi（数据分析）",
-      "command": "node",
-      "args": ["scripts/env-dump.js"],
+      "label": "Pi（后台 Worker）",
+      "command": "D:/DevTools/pi-cli/node_modules/.bin/pi.cmd",
+      "args": [],
       "default_model": "fast",
       "cwd": "..",
       "start_delay_ms": 0,
       "stop_delay_ms": 0
     },
     "claude": {
-      "label": "Claude Code",
-      "command": "node",
-      "args": ["scripts/env-dump.js"],
+      "label": "Claude Code（暂不可用）",
+      "command": "D:/DevTools/claude-cli/node_modules/.bin/claude.cmd",
+      "enabled": false,
+      "args": [],
       "default_model": "powerful",
       "cwd": "..",
       "start_delay_ms": 0,
       "stop_delay_ms": 0
     },
     "codex": {
-      "label": "Codex",
-      "command": "node",
-      "args": ["scripts/env-dump.js"],
+      "label": "Codex（后台 Worker）",
+      "command": "C:/Users/Tang/AppData/Local/OpenAI/Codex/bin/bffc5354119c8421/codex.exe",
+      "args": [],
       "default_model": "balanced",
       "cwd": "..",
       "start_delay_ms": 0,
