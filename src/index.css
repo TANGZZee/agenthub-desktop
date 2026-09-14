@@ -1708,3 +1708,7 @@ html[data-theme="direct"] .chat-tabs button {
   .chat-nav { display: none; }
   .chat-main { grid-column: 1; }
 }
+.office-note { display: block; margin-top: 4px; color: var(--status-warning); font-size: var(--text-tiny); }
+.office-actions { display: flex; align-items: center; gap: 10px; }
+.office-idle { margin: 0; padding: 20px; border: 1px dashed var(--border-medium); border-radius: 12px; color: var(--text-secondary); }
+.star-office-header h2 { display: flex; align-items: center; gap: 8px; }
