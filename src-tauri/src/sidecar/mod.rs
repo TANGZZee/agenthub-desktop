@@ -635,7 +635,6 @@ pub async fn stop_agent(
     Ok(())
 }
 
-
 #[tauri::command]
 pub async fn submit_task(
     app: AppHandle,
@@ -643,9 +642,16 @@ pub async fn submit_task(
     proposal: Value,
 ) -> Result<Value, CmdError> {
     let client = state.inner().clone();
-    tauri::async_runtime::spawn_blocking(move || client.call(&app, "taskSubmit", json!({ "proposal": proposal }), Duration::from_secs(10)))
-        .await
-        .map_err(|error| CmdError::new("internal", format!("提交任务失败：{error}")))?
+    tauri::async_runtime::spawn_blocking(move || {
+        client.call(
+            &app,
+            "taskSubmit",
+            json!({ "proposal": proposal }),
+            Duration::from_secs(10),
+        )
+    })
+    .await
+    .map_err(|error| CmdError::new("internal", format!("提交任务失败：{error}")))?
 }
 
 #[tauri::command]
@@ -654,9 +660,11 @@ pub async fn list_tasks(
     state: State<'_, SidecarClient>,
 ) -> Result<Value, CmdError> {
     let client = state.inner().clone();
-    tauri::async_runtime::spawn_blocking(move || client.call(&app, "taskList", json!({}), Duration::from_secs(10)))
-        .await
-        .map_err(|error| CmdError::new("internal", format!("读取任务失败：{error}")))?
+    tauri::async_runtime::spawn_blocking(move || {
+        client.call(&app, "taskList", json!({}), Duration::from_secs(10))
+    })
+    .await
+    .map_err(|error| CmdError::new("internal", format!("读取任务失败：{error}")))?
 }
 
 #[tauri::command]
@@ -666,10 +674,19 @@ pub async fn cancel_task(
     task_id: String,
 ) -> Result<Value, CmdError> {
     let client = state.inner().clone();
-    tauri::async_runtime::spawn_blocking(move || client.call(&app, "taskCancel", json!({ "taskId": task_id }), Duration::from_secs(10)))
-        .await
-        .map_err(|error| CmdError::new("internal", format!("取消任务失败：{error}")))?
-}\n\n#[tauri::command]
+    tauri::async_runtime::spawn_blocking(move || {
+        client.call(
+            &app,
+            "taskCancel",
+            json!({ "taskId": task_id }),
+            Duration::from_secs(10),
+        )
+    })
+    .await
+    .map_err(|error| CmdError::new("internal", format!("取消任务失败：{error}")))?
+}
+
+#[tauri::command]
 pub async fn list_agents(
     app: AppHandle,
     state: State<'_, SidecarClient>,
