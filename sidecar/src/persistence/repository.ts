@@ -89,5 +89,7 @@ export class TaskRepository {
   listEvents(taskId: string, limit = 100): TaskEventRecord[] {
     return (this.db.prepare("SELECT event_id eventId,task_id taskId,event_type eventType,payload_json,created_at createdAt FROM task_events WHERE task_id=? ORDER BY created_at DESC LIMIT ?").all(taskId, Math.max(1, Math.min(500, limit))) as Array<Record<string,string>>).map((row) => ({ eventId: row.eventId, taskId: row.taskId, eventType: row.eventType, payload: JSON.parse(row.payload_json) as Record<string, unknown>, createdAt: row.createdAt })).reverse();
   }
+  addAttempt(taskId: string, workerId: string, runId: number, status = "running"): string { const attemptId = `${taskId}-${runId}`; this.db.prepare("INSERT OR REPLACE INTO task_attempts(attempt_id,task_id,run_id,worker_id,status,started_at) VALUES(?,?,?,?,?,?)").run(attemptId, taskId, runId, workerId, status, new Date().toISOString()); return attemptId; }
+  finishAttempt(taskId: string, runId: number, status: string, exitCode: number | null = null, errorMessage: string | null = null): void { this.db.prepare("UPDATE task_attempts SET status=?,finished_at=?,exit_code=?,error_message=? WHERE task_id=? AND run_id=?").run(status, new Date().toISOString(), exitCode, errorMessage, taskId, runId); }
   close(): void { this.db.close(); }
 }
