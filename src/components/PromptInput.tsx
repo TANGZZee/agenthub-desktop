@@ -8,6 +8,7 @@ interface PromptInputProps {
   runtimes: Record<string, AgentRuntime>;
   channelPhase: ChannelPhase;
   selectedAgentId: string;
+  connectionError?: string | null;
   onSelectAgent: (agentId: string) => void;
   onRefreshRoster: () => Promise<void>;
   onStart: (agentId: string, prompt: string, model: string | null) => Promise<void>;
@@ -23,6 +24,7 @@ export function PromptInput({
   runtimes,
   channelPhase,
   selectedAgentId,
+  connectionError,
   onSelectAgent,
   onRefreshRoster,
   onStart,
@@ -34,7 +36,6 @@ export function PromptInput({
   const aliases = selectedAgent?.modelAliases ?? [];
   const runtime = selectedAgent ? runtimes[selectedAgent.id] : undefined;
   const isHermesEntry = selectedAgent?.id === "hermes";
-  const isDisabledWorker = selectedAgent?.id === "claude";
   const preview = useMemo(() => isHermesEntry && prompt.trim() ? buildReadOnlyProposal(prompt) : null, [isHermesEntry, prompt]);
 
   useEffect(() => {
@@ -45,13 +46,18 @@ export function PromptInput({
     setModel((current) => aliases.includes(current) ? current : selectedAgent.defaultModel || aliases[0] || "");
   }, [aliases, selectedAgent]);
 
-  const enabled =
-    channelPhase === "ready" &&
-    prompt.trim().length > 0 &&
-    !isDisabledWorker &&
-    (isHermesEntry
-      ? Boolean(onSubmitTask)
-      : selectedAgent?.configured === true && canStartPhase(runtime) && model.length > 0);
+  const blockReason = useMemo(() => {
+    if (selectedAgent?.id === "claude") return "Claude Code 当前不可接入";
+    if (channelPhase !== "ready") return connectionError ? `后台还没连上：${connectionError}` : "后台还在连接，请稍等几秒后再发送";
+    if (!prompt.trim()) return "请先输入任务内容";
+    if (isHermesEntry) return onSubmitTask ? null : "任务入口未接好";
+    if (selectedAgent?.configured !== true) return selectedAgent?.reason ?? "这个 Agent 当前不能启动";
+    if (!canStartPhase(runtime)) return "这个 Agent 正在运行，请等它结束或先终止";
+    if (!model) return "请先选择模型";
+    return null;
+  }, [selectedAgent, channelPhase, connectionError, prompt, isHermesEntry, onSubmitTask, runtime, model]);
+
+  const enabled = blockReason === null;
 
   async function submit() {
     if (!enabled || !selectedAgent) return;
@@ -98,7 +104,9 @@ export function PromptInput({
           </label>
         )}
         {isHermesEntry && preview && <span className="prompt-agent-reason">{preview.planReason}</span>}
-        {selectedAgent?.id === "claude" && <span className="prompt-agent-reason">Claude Code 当前不可接入</span>}
+        {channelPhase !== "ready" && (
+          <button type="button" className="text-button" onClick={() => void onRefreshRoster()}>重新连接后台</button>
+        )}
       </div>
       <div className="prompt-box">
         <textarea
@@ -113,10 +121,11 @@ export function PromptInput({
             }
           }}
         />
-        <button type="button" className="send-button" aria-label="启动任务" title="启动任务" disabled={!enabled} onClick={() => void submit()}>
+        <button type="button" className="send-button" aria-label="启动任务" title={blockReason ?? "启动任务"} disabled={!enabled} onClick={() => void submit()}>
           <Send size={17} aria-hidden="true" />
         </button>
       </div>
+      {blockReason && prompt.trim() && <p className="prompt-block-reason">{blockReason}</p>}
     </footer>
   );
 }

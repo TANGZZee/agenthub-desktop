@@ -58,6 +58,7 @@ function App() {
           runtimes={sidecarState.runtimes}
           channelPhase={sidecarState.channelPhase}
           selectedAgentId={selectedAgentId}
+          connectionError={sidecarState.connectionError}
           onSelectAgent={setSelectedAgentId}
           onRefreshRoster={sidecarState.refreshRoster}
           onStart={sidecarState.startAgent}

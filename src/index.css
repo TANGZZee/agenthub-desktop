@@ -1520,3 +1520,4 @@ textarea {
   .task-rail { border-left: 0; border-top: 1px solid var(--border-light); height: auto; max-height: 40%; }
 }
 .topbar-tools { display: inline-flex; align-items: center; gap: 12px; }
+.prompt-block-reason { margin: 8px 0 0; color: var(--status-error); font-size: var(--text-caption); }

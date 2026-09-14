@@ -1,6 +1,6 @@
-import Database from "better-sqlite3";
 import { mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { createRequire } from "node:module";
 
 export interface TaskEventRecord {
   eventId: string;
@@ -9,6 +9,16 @@ export interface TaskEventRecord {
   payload: Record<string, unknown>;
   createdAt: string;
 }
+
+type SqliteDb = {
+  pragma(sql: string): unknown;
+  exec(sql: string): void;
+  prepare(sql: string): {
+    run(...params: unknown[]): { changes: number };
+    all(...params: unknown[]): unknown[];
+  };
+  close(): void;
+};
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS tasks (
@@ -69,35 +79,93 @@ function safePayload(payload: Record<string, unknown>): Record<string, unknown> 
   return copy;
 }
 
-export class TaskRepository {
-  private readonly db: Database;
-  constructor(databasePath: string) {
+function openSqlite(databasePath: string): SqliteDb | null {
+  try {
+    const require = createRequire(resolve(process.cwd(), "package.json"));
+    const Database = require("better-sqlite3");
     mkdirSync(dirname(resolve(databasePath)), { recursive: true });
-    this.db = new Database(databasePath);
-    this.db.pragma("journal_mode = WAL");
-    this.db.pragma("busy_timeout = 3000");
-    this.db.exec(SCHEMA);
+    const db = new Database(databasePath) as SqliteDb;
+    db.pragma("journal_mode = WAL");
+    db.pragma("busy_timeout = 3000");
+    db.exec(SCHEMA);
+    return db;
+  } catch (error) {
+    console.error(`[sidecar] SQLite 未能打开，改用内存记录：${String(error)}`);
+    return null;
   }
+}
+
+export class TaskRepository {
+  private readonly db: SqliteDb | null;
+  private readonly memoryTasks = new Map<string, Record<string, unknown>>();
+  private readonly memoryEvents: TaskEventRecord[] = [];
+
+  constructor(databasePath: string) {
+    this.db = openSqlite(databasePath);
+  }
+
   saveTask(task: { taskId: string; proposalId: string; title: string; description: string; assignedWorkerId: string; status: string; writeScope: string; createdAt: string; updatedAt: string; runId?: number; lastError?: string }): void {
-    this.db.prepare(`INSERT INTO tasks(task_id,proposal_id,title,description,assigned_worker_id,status,write_scope,created_at,updated_at,run_id,last_error) VALUES(@taskId,@proposalId,@title,@description,@assignedWorkerId,@status,@writeScope,@createdAt,@updatedAt,@runId,@lastError) ON CONFLICT(task_id) DO UPDATE SET status=@status,updated_at=@updatedAt,run_id=@runId,last_error=@lastError`).run({ ...task, runId: task.runId ?? null, lastError: task.lastError ?? null });
+    if (this.db) {
+      this.db.prepare(`INSERT INTO tasks(task_id,proposal_id,title,description,assigned_worker_id,status,write_scope,created_at,updated_at,run_id,last_error) VALUES(@taskId,@proposalId,@title,@description,@assignedWorkerId,@status,@writeScope,@createdAt,@updatedAt,@runId,@lastError) ON CONFLICT(task_id) DO UPDATE SET status=@status,updated_at=@updatedAt,run_id=@runId,last_error=@lastError`).run({ ...task, runId: task.runId ?? null, lastError: task.lastError ?? null });
+      return;
+    }
+    this.memoryTasks.set(task.taskId, { ...task });
   }
+
   addEvent(taskId: string, eventType: string, payload: Record<string, unknown> = {}): TaskEventRecord {
     const event = { eventId: `${Date.now()}-${Math.random().toString(36).slice(2)}`, taskId, eventType, payload: safePayload(payload), createdAt: new Date().toISOString() };
-    this.db.prepare("INSERT INTO task_events(event_id,task_id,event_type,payload_json,created_at) VALUES(?,?,?,?,?)").run(event.eventId, event.taskId, event.eventType, JSON.stringify(event.payload), event.createdAt);
+    if (this.db) {
+      this.db.prepare("INSERT INTO task_events(event_id,task_id,event_type,payload_json,created_at) VALUES(?,?,?,?,?)").run(event.eventId, event.taskId, event.eventType, JSON.stringify(event.payload), event.createdAt);
+    } else {
+      this.memoryEvents.push(event);
+    }
     return event;
   }
+
   listEvents(taskId: string, limit = 100): TaskEventRecord[] {
-    return (this.db.prepare("SELECT event_id eventId,task_id taskId,event_type eventType,payload_json,created_at createdAt FROM task_events WHERE task_id=? ORDER BY created_at DESC LIMIT ?").all(taskId, Math.max(1, Math.min(500, limit))) as Array<Record<string,string>>).map((row) => ({ eventId: row.eventId, taskId: row.taskId, eventType: row.eventType, payload: JSON.parse(row.payload_json) as Record<string, unknown>, createdAt: row.createdAt })).reverse();
+    if (this.db) {
+      return (this.db.prepare("SELECT event_id eventId,task_id taskId,event_type eventType,payload_json,created_at createdAt FROM task_events WHERE task_id=? ORDER BY created_at DESC LIMIT ?").all(taskId, Math.max(1, Math.min(500, limit))) as Array<Record<string, string>>).map((row) => ({ eventId: row.eventId, taskId: row.taskId, eventType: row.eventType, payload: JSON.parse(row.payload_json) as Record<string, unknown>, createdAt: row.createdAt })).reverse();
+    }
+    return this.memoryEvents.filter((event) => event.taskId === taskId).slice(-Math.max(1, Math.min(500, limit)));
   }
+
   listTasks(): Array<{ taskId: string; proposalId: string; title: string; description: string; assignedWorkerId: string; status: string; writeScope: string; createdAt: string; updatedAt: string; runId?: number }> {
-    return (this.db.prepare("SELECT task_id taskId, proposal_id proposalId, title, description, assigned_worker_id assignedWorkerId, status, write_scope writeScope, created_at createdAt, updated_at updatedAt, run_id runId FROM tasks ORDER BY updated_at DESC").all() as Array<Record<string, unknown>>).map((row) => ({ taskId: String(row.taskId), proposalId: String(row.proposalId), title: String(row.title), description: String(row.description), assignedWorkerId: String(row.assignedWorkerId), status: String(row.status), writeScope: String(row.writeScope), createdAt: String(row.createdAt), updatedAt: String(row.updatedAt), ...(typeof row.runId === "number" ? { runId: row.runId } : {}) }));
-  }  addAttempt(taskId: string, workerId: string, runId: number, status = "running"): string { const attemptId = `${taskId}-${runId}`; this.db.prepare("INSERT OR REPLACE INTO task_attempts(attempt_id,task_id,run_id,worker_id,status,started_at) VALUES(?,?,?,?,?,?)").run(attemptId, taskId, runId, workerId, status, new Date().toISOString()); return attemptId; }
-  finishAttempt(taskId: string, runId: number, status: string, exitCode: number | null = null, errorMessage: string | null = null): void { this.db.prepare("UPDATE task_attempts SET status=?,finished_at=?,exit_code=?,error_message=? WHERE task_id=? AND run_id=?").run(status, new Date().toISOString(), exitCode, errorMessage, taskId, runId); }
+    if (this.db) {
+      return (this.db.prepare("SELECT task_id taskId, proposal_id proposalId, title, description, assigned_worker_id assignedWorkerId, status, write_scope writeScope, created_at createdAt, updated_at updatedAt, run_id runId FROM tasks ORDER BY updated_at DESC").all() as Array<Record<string, unknown>>).map((row) => ({ taskId: String(row.taskId), proposalId: String(row.proposalId), title: String(row.title), description: String(row.description), assignedWorkerId: String(row.assignedWorkerId), status: String(row.status), writeScope: String(row.writeScope), createdAt: String(row.createdAt), updatedAt: String(row.updatedAt), ...(typeof row.runId === "number" ? { runId: row.runId } : {}) }));
+    }
+    return [...this.memoryTasks.values()].map((row) => ({
+      taskId: String(row.taskId),
+      proposalId: String(row.proposalId),
+      title: String(row.title),
+      description: String(row.description),
+      assignedWorkerId: String(row.assignedWorkerId),
+      status: String(row.status),
+      writeScope: String(row.writeScope),
+      createdAt: String(row.createdAt),
+      updatedAt: String(row.updatedAt),
+      ...(typeof row.runId === "number" ? { runId: row.runId } : {}),
+    }));
+  }
+
+  addAttempt(taskId: string, workerId: string, runId: number, status = "running"): string {
+    const attemptId = `${taskId}-${runId}`;
+    this.db?.prepare("INSERT OR REPLACE INTO task_attempts(attempt_id,task_id,run_id,worker_id,status,started_at) VALUES(?,?,?,?,?,?)").run(attemptId, taskId, runId, workerId, status, new Date().toISOString());
+    return attemptId;
+  }
+
+  finishAttempt(taskId: string, runId: number, status: string, exitCode: number | null = null, errorMessage: string | null = null): void {
+    this.db?.prepare("UPDATE task_attempts SET status=?,finished_at=?,exit_code=?,error_message=? WHERE task_id=? AND run_id=?").run(status, new Date().toISOString(), exitCode, errorMessage, taskId, runId);
+  }
+
   addAudit(action: string, taskId: string | null, detail: Record<string, unknown> = {}): void {
-    this.db.prepare("INSERT INTO audit_log(audit_id,action,task_id,detail_json,created_at) VALUES(?,?,?,?,?)").run(`${Date.now()}-${Math.random().toString(36).slice(2)}`, action, taskId, JSON.stringify(detail), new Date().toISOString());
+    this.db?.prepare("INSERT INTO audit_log(audit_id,action,task_id,detail_json,created_at) VALUES(?,?,?,?,?)").run(`${Date.now()}-${Math.random().toString(36).slice(2)}`, action, taskId, JSON.stringify(detail), new Date().toISOString());
   }
+
   addUsage(taskId: string, inputTokens?: number, outputTokens?: number, cost?: number): void {
-    this.db.prepare("INSERT INTO usage_records(usage_id,task_id,input_tokens,output_tokens,cost,created_at) VALUES(?,?,?,?,?,?)").run(`${Date.now()}-${Math.random().toString(36).slice(2)}`, taskId, inputTokens ?? null, outputTokens ?? null, cost ?? null, new Date().toISOString());
+    this.db?.prepare("INSERT INTO usage_records(usage_id,task_id,input_tokens,output_tokens,cost,created_at) VALUES(?,?,?,?,?,?)").run(`${Date.now()}-${Math.random().toString(36).slice(2)}`, taskId, inputTokens ?? null, outputTokens ?? null, cost ?? null, new Date().toISOString());
   }
-  close(): void { this.db.close(); }
+
+  close(): void {
+    this.db?.close();
+  }
 }
