@@ -118,12 +118,9 @@ export function AgentSettingsView({ agents }: AgentSettingsViewProps) {
 
   return (
     <div className="settings-view">
-      <header className="app-header">
-        <div>
-          <h1>Agent 设置中心</h1>
-          <p>每个 Agent 都有自己的工作设置，也有 AgentHub 的调度设置。不会改窗口主题这类桌面外观项。</p>
-        </div>
-        <ShieldCheck size={22} aria-hidden="true" />
+      <header className="page-kicker">
+        <ShieldCheck size={16} aria-hidden="true" />
+        <span>每个智能体单独配置。不改原桌面窗口设置，也不显示密钥。</span>
       </header>
       <div className="settings-layout">
         <aside className="settings-agent-list">

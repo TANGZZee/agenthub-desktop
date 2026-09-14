@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { AgentCatalogView } from "./components/AgentCatalogView";
 import { AgentSettingsView } from "./components/AgentSettingsView";
 import { AgentStatusList } from "./components/AgentStatusList";
 import { AppShell, type AppView } from "./components/AppShell";
@@ -9,7 +8,6 @@ import { OfficeView } from "./components/OfficeView";
 import { PromptInput } from "./components/PromptInput";
 import { RunView } from "./components/RunView";
 import { TaskBoard } from "./components/TaskBoard";
-import { TaskComposer } from "./components/TaskComposer";
 import { useSidecar } from "./hooks/useSidecar";
 import { buildReadOnlyProposal } from "../shared/planner";
 import { TAURI_COMMANDS } from "../shared/protocol";
@@ -68,7 +66,7 @@ function App() {
       ) : null}
     >
       {activeView === "run" ? (
-        <>
+        <div className="workspace">
           <RunView
             agent={selectedAgent}
             runtime={selectedRuntime}
@@ -80,13 +78,12 @@ function App() {
             onStop={sidecarState.stopAgent}
             onRefreshRoster={sidecarState.refreshRoster}
           />
-          <TaskComposer onSubmitted={() => setTaskRefreshSignal((value) => value + 1)} />
           <TaskBoard onSelectAgent={setSelectedAgentId} refreshSignal={taskRefreshSignal} />
-        </>
+        </div>
       ) : activeView === "office" ? (
         <OfficeView agents={sidecarState.agents} runtimes={sidecarState.runtimes} refreshSignal={taskRefreshSignal} />
       ) : activeView === "agents" ? (
-        <><AgentCatalogView agents={sidecarState.agents} /><AgentSettingsView agents={sidecarState.agents} /></>
+        <AgentSettingsView agents={sidecarState.agents} />
       ) : (
         <DiagnosticView />
       )}

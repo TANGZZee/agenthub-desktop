@@ -1375,3 +1375,147 @@ textarea {
 .setting-text span { display: grid; gap: 3px; max-width: 52%; }
 .setting-text small { color: var(--text-secondary); }
 .setting-text input, .setting-text select { width: min(280px, 42%); padding: 8px 10px; border: 1px solid var(--border-medium); border-radius: var(--radius-sm); font: inherit; background: var(--bg-primary); color: var(--text-primary); }
+.primary-content {
+  display: block;
+  width: 100%;
+  justify-content: unset;
+  overflow: auto;
+}
+.primary-content.run {
+  display: flex;
+  padding: 0;
+  overflow: hidden;
+}
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.run-view {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  min-height: 0;
+  padding: var(--space-5) var(--space-6) var(--space-4);
+}
+.run-view h1 {
+  font-size: var(--text-title);
+}
+.run-output {
+  flex: 1;
+  min-height: 0;
+}
+.task-rail {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  padding: var(--space-4);
+  border-left: 1px solid var(--border-light);
+  background: var(--bg-secondary);
+  overflow: auto;
+}
+.task-rail header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+.task-rail header strong {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.task-list { display: grid; gap: 8px; }
+.task-row {
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+}
+.task-row-main {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+.task-row-main span, .task-empty { color: var(--text-secondary); font-size: var(--text-caption); }
+.task-row-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.icon-button {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.icon-button:hover { background: color-mix(in srgb, var(--text-primary) 6%, transparent); color: var(--text-primary); }
+.page-kicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: var(--text-secondary);
+  font-size: var(--text-caption);
+}
+.settings-view { width: 100%; height: 100%; gap: 0; }
+.settings-layout { height: calc(100% - 28px); }
+.settings-agent-list, .settings-panel {
+  border: 0;
+  background: transparent;
+}
+.settings-agent-list { padding: 0 8px 0 0; }
+.settings-panel {
+  padding: 0 8px 24px 16px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+}
+.settings-form {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  padding: 0 16px;
+  max-width: none;
+}
+.settings-panel-title { border: 0; padding: 20px 4px 8px; }
+.native-info { background: var(--bg-primary); }
+.office-view { width: 100%; gap: 16px; }
+.office-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+.office-cell {
+  display: flex;
+  gap: 10px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+}
+.office-cell strong { display: block; font-size: var(--text-subtitle); }
+.office-cell em { font-style: normal; color: var(--text-secondary); font-size: var(--text-caption); }
+.office-cell p { margin: 4px 0 0; color: var(--text-secondary); font-size: var(--text-caption); }
+.office-cell.error { background: color-mix(in srgb, var(--status-error) 10%, var(--bg-secondary)); }
+.star-office-panel {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.star-office-header { margin-bottom: 10px; }
+.star-office-frame-wrap { min-height: 420px; border-radius: var(--radius-lg); }
+.prompt-area { background: var(--bg-primary); }
+@media (max-width: 1100px) {
+  .workspace { grid-template-columns: 1fr; }
+  .task-rail { border-left: 0; border-top: 1px solid var(--border-light); height: auto; max-height: 40%; }
+}
