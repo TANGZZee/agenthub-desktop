@@ -725,16 +725,55 @@ pub async fn fetch_provider_models(
     .map_err(|error| CmdError::new("internal", format!("拉取模型失败：{error}")))?
 }
 
+fn python_candidates() -> Vec<PathBuf> {
+    let mut out = vec![
+        PathBuf::from("python"),
+        PathBuf::from("python3"),
+        PathBuf::from("py"),
+    ];
+    if let Some(local) = std::env::var_os("LOCALAPPDATA") {
+        let programs = PathBuf::from(local).join("Programs").join("Python");
+        if let Ok(entries) = std::fs::read_dir(programs) {
+            let mut dirs: Vec<_> = entries.filter_map(|e| e.ok()).map(|e| e.path()).collect();
+            dirs.sort();
+            dirs.reverse();
+            for dir in dirs {
+                let exe = dir.join("python.exe");
+                if exe.is_file() {
+                    out.push(exe);
+                }
+            }
+        }
+    }
+    out
+}
+
+fn star_office_already_up() -> bool {
+    let Ok(addr) = "127.0.0.1:19000".parse::<std::net::SocketAddr>() else {
+        return false;
+    };
+    std::net::TcpStream::connect_timeout(&addr, Duration::from_millis(400)).is_ok()
+}
+
 #[tauri::command]
 pub fn start_star_office() -> Result<String, CmdError> {
+    if star_office_already_up() {
+        return Ok("像素办公室已经在运行，可以直接打开。".to_string());
+    }
     let root = dev_project_root().ok_or_else(|| CmdError::new("internal", "找不到项目目录"))?;
     let office_root = root.join("third_party/Star-Office-UI");
     let script = office_root.join("backend/app.py");
     if !script.is_file() {
         return Err(CmdError::new("internal", "缺少 Star Office 后端脚本 backend/app.py"));
     }
-    for candidate in ["python", "python3", "py"] {
-        let mut command = Command::new(candidate);
+    let sample = office_root.join("state.sample.json");
+    let state = office_root.join("state.json");
+    if !state.is_file() && sample.is_file() {
+        let _ = std::fs::copy(&sample, &state);
+    }
+    for candidate in python_candidates() {
+        let label = candidate.display().to_string();
+        let mut command = Command::new(&candidate);
         command
             .arg(&script)
             .current_dir(&office_root)
@@ -744,7 +783,7 @@ pub fn start_star_office() -> Result<String, CmdError> {
         #[cfg(windows)]
         command.creation_flags(CREATE_NO_WINDOW);
         match command.spawn() {
-            Ok(_) => return Ok(format!("已用 {candidate} 发出启动请求，请等几秒再打开。")),
+            Ok(_) => return Ok(format!("已用 {label} 发出启动请求，请等几秒再打开。")),
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
             Err(error) => return Err(CmdError::new("internal", format!("启动失败：{error}"))),
         }
