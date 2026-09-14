@@ -528,9 +528,10 @@ export class AgentPool {
     const config = this.currentConfig();
     const agents: AgentInfo[] = [];
 
-    for (const agent of config.agents.values()) {
+    const configuredAgents = [...config.agents.values()];
+    const probes = await Promise.all(configuredAgents.map((agent) => probeAgent(agent)));
+    configuredAgents.forEach((agent, index) => {
       const entry = this.entries.get(agent.id);
-      const probe = await probeAgent(agent);
       agents.push({
         id: agent.id,
         label: agent.label,
@@ -541,9 +542,9 @@ export class AgentPool {
         phase: this.phaseFor(entry),
         runId: entry?.runId ?? null,
         resolvedModel: entry?.resolvedModel ?? null,
-        probe,
+        probe: probes[index],
       });
-    }
+    });
 
     for (const [agentId, entry] of this.entries) {
       if (config.agents.has(agentId)) continue;

@@ -119,6 +119,25 @@ fn resolve_resource(app: &AppHandle, relative: &str) -> Result<PathBuf, CmdError
     ))
 }
 
+fn find_node() -> std::path::PathBuf {
+    if let Ok(path) = std::env::var("NODE_PATH") {
+        let candidate = std::path::PathBuf::from(path);
+        if candidate.is_file() {
+            return candidate;
+        }
+    }
+    for candidate in [
+        r"D:\Node\node.exe",
+        r"C:\Program Files\nodejs\node.exe",
+        r"C:\Program Files (x86)\nodejs\node.exe",
+    ] {
+        let path = std::path::PathBuf::from(candidate);
+        if path.is_file() {
+            return path;
+        }
+    }
+    std::path::PathBuf::from("node")
+}
 fn emit_status(app: &AppHandle, available: bool, job_object: bool, message: Option<String>) {
     let _ = app.emit(
         "sidecar-status",
@@ -416,7 +435,7 @@ impl SidecarClient {
             ),
         };
 
-        let mut command = Command::new("node");
+        let mut command = Command::new(find_node());
         command
             .arg(&script)
             .arg("--config")
@@ -731,7 +750,7 @@ pub async fn list_agents(
     let client = state.inner().clone();
     let status_client = client.clone();
     let value = tauri::async_runtime::spawn_blocking(move || {
-        client.call(&app, "listAgents", json!({}), Duration::from_secs(10))
+        client.call(&app, "listAgents", json!({}), Duration::from_secs(30))
     })
     .await
     .map_err(|error| CmdError::new("internal", format!("读取 Agent 列表失败：{error}")))??;
