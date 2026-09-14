@@ -1,29 +1,43 @@
+.DS_Store
+.idea/
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+out/
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
 # Logs
-logs
-*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-sidecar/dist/
-*.local
+# Environment files
+.env
+.env.*
+!.env.example
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# ESLint cache
+.eslintcache
 
-*.sqlite
-*.sqlite-wal
-*.sqlite-shm
+# Local isolated Hermes homes for development/tests
+.sandbox/
+
+# Electron packaging artifacts
+release/
+.claude/worktrees
+
+# Tauri
+**/src-tauri/target/
+**/src-tauri/gen/
+**/src-tauri/WixTools/
+
+# Local launcher scripts (user-specific, do not commit)
+/*.bat
+/*.ps1
+.mcp.json
