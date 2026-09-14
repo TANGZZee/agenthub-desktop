@@ -95,11 +95,14 @@ export function startAgentProcess(
   env: NodeJS.ProcessEnv,
   callbacks: AgentProcessCallbacks,
 ): AgentProcessHandle {
+  // Windows 下 .cmd / .bat 不能直接 spawn，必须交给系统命令外壳，否则会报 EINVAL。
+  const useShell = /\.(cmd|bat)$/i.test(agent.command);
   const child = spawn(agent.command, agent.args, {
     cwd: agent.cwd,
     env,
     stdio: ["ignore", "pipe", "pipe"],
     windowsHide: true,
+    shell: useShell,
   });
 
   const stdout = child.stdout;
