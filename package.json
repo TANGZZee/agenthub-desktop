@@ -8,7 +8,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "typecheck:sidecar": "tsc -p sidecar/tsconfig.json --noEmit",
-    "build:sidecar": "npm run typecheck:sidecar && esbuild sidecar/src/index.ts --bundle --platform=node --format=cjs --target=node20 --outfile=sidecar/dist/sidecar.cjs",
+    "build:sidecar": "npm run typecheck:sidecar && esbuild sidecar/src/index.ts --bundle --platform=node --format=cjs --target=node20 --external:better-sqlite3 --outfile=sidecar/dist/sidecar.cjs",
+    "smoke:sidecar": "node --experimental-strip-types sidecar/src/task-queue-smoke.ts && node --experimental-strip-types sidecar/src/adapter-smoke.ts && node --experimental-strip-types sidecar/src/planner-smoke.ts",
     "tauri": "tauri"
   },
   "dependencies": {

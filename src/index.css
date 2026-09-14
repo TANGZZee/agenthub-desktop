@@ -1356,3 +1356,13 @@ textarea {
 .office-credit { margin: 12px 0 0; color: var(--text-secondary); font-size: var(--text-caption); }
 .office-credit code { overflow-wrap: anywhere; }
 @media (max-width: 700px) { .star-office-header { flex-direction: column; } .star-office-frame-wrap { min-height: 300px; } .star-office-frame { min-height: 400px; } }
+
+.task-plan-hint { margin: 10px 0 0; color: var(--text-secondary); font-size: var(--text-caption); }
+.task-error { color: #c42b23 !important; }
+.task-timeline { width: 100%; margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--border-light); }
+.task-timeline h4 { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; font-size: var(--text-caption); }
+.task-timeline ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.task-timeline li { display: flex; justify-content: space-between; gap: 12px; color: var(--text-secondary); font-size: var(--text-caption); }
+.task-timeline li div { display: grid; gap: 2px; }
+.task-timeline small { color: var(--text-tertiary); overflow-wrap: anywhere; }
+.catalog-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }

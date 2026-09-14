@@ -396,7 +396,8 @@ pub fn run() {
             sidecar::submit_task,
             sidecar::list_tasks,
             sidecar::cancel_task,
-            sidecar::list_task_events
+            sidecar::list_task_events,
+            sidecar::retry_task
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

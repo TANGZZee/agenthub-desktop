@@ -23,3 +23,7 @@ sidecar/dist/
 *.njsproj
 *.sln
 *.sw?
+
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm

@@ -93,5 +93,11 @@ export class TaskRepository {
     return (this.db.prepare("SELECT task_id taskId, proposal_id proposalId, title, description, assigned_worker_id assignedWorkerId, status, write_scope writeScope, created_at createdAt, updated_at updatedAt, run_id runId FROM tasks ORDER BY updated_at DESC").all() as Array<Record<string, unknown>>).map((row) => ({ taskId: String(row.taskId), proposalId: String(row.proposalId), title: String(row.title), description: String(row.description), assignedWorkerId: String(row.assignedWorkerId), status: String(row.status), writeScope: String(row.writeScope), createdAt: String(row.createdAt), updatedAt: String(row.updatedAt), ...(typeof row.runId === "number" ? { runId: row.runId } : {}) }));
   }  addAttempt(taskId: string, workerId: string, runId: number, status = "running"): string { const attemptId = `${taskId}-${runId}`; this.db.prepare("INSERT OR REPLACE INTO task_attempts(attempt_id,task_id,run_id,worker_id,status,started_at) VALUES(?,?,?,?,?,?)").run(attemptId, taskId, runId, workerId, status, new Date().toISOString()); return attemptId; }
   finishAttempt(taskId: string, runId: number, status: string, exitCode: number | null = null, errorMessage: string | null = null): void { this.db.prepare("UPDATE task_attempts SET status=?,finished_at=?,exit_code=?,error_message=? WHERE task_id=? AND run_id=?").run(status, new Date().toISOString(), exitCode, errorMessage, taskId, runId); }
+  addAudit(action: string, taskId: string | null, detail: Record<string, unknown> = {}): void {
+    this.db.prepare("INSERT INTO audit_log(audit_id,action,task_id,detail_json,created_at) VALUES(?,?,?,?,?)").run(`${Date.now()}-${Math.random().toString(36).slice(2)}`, action, taskId, JSON.stringify(detail), new Date().toISOString());
+  }
+  addUsage(taskId: string, inputTokens?: number, outputTokens?: number, cost?: number): void {
+    this.db.prepare("INSERT INTO usage_records(usage_id,task_id,input_tokens,output_tokens,cost,created_at) VALUES(?,?,?,?,?,?)").run(`${Date.now()}-${Math.random().toString(36).slice(2)}`, taskId, inputTokens ?? null, outputTokens ?? null, cost ?? null, new Date().toISOString());
+  }
   close(): void { this.db.close(); }
 }

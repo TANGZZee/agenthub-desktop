@@ -687,6 +687,24 @@ pub async fn cancel_task(
 }
 
 #[tauri::command]
+pub async fn retry_task(
+    app: AppHandle,
+    state: State<'_, SidecarClient>,
+    task_id: String,
+) -> Result<Value, CmdError> {
+    let client = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        client.call(
+            &app,
+            "taskRetry",
+            json!({ "taskId": task_id }),
+            Duration::from_secs(10),
+        )
+    })
+    .await
+    .map_err(|error| CmdError::new("internal", format!("重试任务失败：{error}")))?
+}
+#[tauri::command]
 pub async fn list_task_events(
     app: AppHandle,
     state: State<'_, SidecarClient>,

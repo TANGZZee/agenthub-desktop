@@ -6,4 +6,4 @@ export interface TaskEnvelope extends TaskProposal { taskId: string; cwd: string
 export interface AdmissionResult { accepted: boolean; envelope?: TaskEnvelope; reasons: string[]; }
 export const FORBIDDEN_TOOLS = ["terminal", "bash", "browser", "computer_use", "delegation"] as const;
 
-export interface TaskRecordWire extends Omit<TaskEnvelope, 'status'> { status: TaskStatus; updatedAt: string; }
+export interface TaskRecordWire extends Omit<TaskEnvelope, 'status'> { status: TaskStatus; updatedAt: string; runId?: number; lastError?: string; retryCount?: number; }

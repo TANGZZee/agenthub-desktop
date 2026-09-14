@@ -11,3 +11,5 @@ const codexArgs = codex.buildArgs({ taskId: "test", prompt: "read only", cwd: ".
 if (!codexArgs.includes("--sandbox") || !codexArgs.includes("read-only") || codexArgs.includes("--dangerously-bypass-approvals-and-sandbox")) throw new Error("Codex 安全参数异常");
 
 console.log("adapter smoke test passed");
+
+
