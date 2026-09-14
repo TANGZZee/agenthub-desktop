@@ -66,9 +66,15 @@ Hermes Profile 与 Worker Profile 必须分开。Hermes Profile 管理 Hermes �
 
 新增一个受控 Worker 适配器，完成 Hermes 请求、主进程准入、Worker 启动、输出摘要、完成状态和 Hermes 可见结果的闭环。测试必须覆盖启动失败、超时、取消和敏感信息过滤。
 
+M1 已在 `src/main/agenthub/` 落地：主进程调度器、本机 loopback 工具服务、IPC `agenthub-dispatch`，以及侧边栏 Workers 页。Echo Worker 完成确定性的闭环；智能体接入改为「列出候选、由用户选择安装」的目录流程。
+
 ### M2：多 Worker 编排
 
-接入 Pi、Codex 和 Claude Code 的独立配置，支持并行步骤、依赖关系、重试、阻塞和人工确认。Hermes 可以通过统一工具选择 Worker，而不是前端硬编码分派。
+Workers 页先列出 AgentHub 已支持的 Worker，再按市面排名列出十个主流 CLI（Claude Code、Codex CLI、Gemini CLI、GitHub Copilot CLI、Cursor CLI、OpenCode、Cline、Aider、Qwen Code、Goose）。只有探测到本机 CLI 且已有安全 Runner 的条目才能被用户接入；其余条目只显示安装说明，按钮明确禁用并给出原因。用户的选择保存在桌面自身 userData 的 `agenthub-catalog.v1.json`，探测到命令不会被自动接入，`worker.*` 工具也无法修改这份列表。
+
+每个已接入的 Agent 都能单独配置模型：下拉列表直接读 Hermes 已经配好的模型库（Provider、密钥、端点仍归 Hermes 管理，AgentHub 不新增、不改写任何凭据），同时提供「自定义模型 ID」给单个 Agent 独立使用——这种模型由该 CLI 自己的登录配置解析。选择结果以 `{model}` 占位符注入 Worker 的固定参数；清除后连同前面的参数一起消失，回到 CLI 默认。含命令行危险字符的值会被拒绝。
+
+本轮同时修掉两个会导致「点了运行却没有结果」的缺陷：Windows 上 npm 安装的 CLI 是 `.cmd` 批处理 shim，Node 直接 spawn 会抛 `EINVAL`，现在会解析 shim 指向的 JS 入口并用 Node 启动，任务文本不经过任何命令解释器；Pi 的 Runner 在启动前会先跑 `pi auth check` 凭据预检，四个 Provider 全部未就绪时立即返回可读错误，而不是挂满十分钟超时。后续阶段仍要做 Windows 进程树清理、并行步骤与人工确认。
 
 ### M3：可观察性
 

@@ -17,6 +17,8 @@ export default {
   tools: "Alat",
   schedules: "Jadwal",
   kanban: "Kanban",
+  workers: "Workers",
+
   gateway: "Gateway",
   settings: "Pengaturan",
   collapseSidebar: "Ciutkan sidebar",

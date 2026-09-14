@@ -17,6 +17,9 @@ export default {
   tools: "工具",
   schedules: "计划任务",
   kanban: "看板",
+  workers: "Workers",
+
+
   gateway: "网关",
   settings: "设置",
   collapseSidebar: "折叠侧边栏",

@@ -17,6 +17,8 @@ export default {
   tools: "Ferramentas",
   schedules: "Agendamentos",
   kanban: "Kanban",
+  workers: "Workers",
+
   gateway: "Gateway",
   settings: "Definições",
   collapseSidebar: "Recolher barra lateral",

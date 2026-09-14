@@ -42,6 +42,13 @@ import type {
 import type { GpuPreferenceMode, GpuStatus } from "../shared/gpu";
 import type { AgentCapabilitySnapshot } from "../shared/agent-capabilities";
 import type { SessionLocation } from "../shared/session-location";
+import type {
+  WorkerToolName,
+  WorkerToolResponse,
+  WorkerToolStatus,
+  WorkerCatalogResult,
+  AgentHubModelOption,
+} from "../shared/agenthub";
 
 interface ElectronAPI {
   process: {
@@ -1371,6 +1378,21 @@ interface HermesAPI {
     logFile?: string,
     lines?: number,
   ) => Promise<{ content: string; path: string }>;
+
+  agenthubDispatch: (
+    tool: WorkerToolName | string,
+    args?: unknown,
+  ) => Promise<WorkerToolResponse>;
+  agenthubToolStatus: () => Promise<WorkerToolStatus>;
+  agenthubCatalogList: () => Promise<WorkerCatalogResult>;
+  agenthubCatalogInstall: (id: string) => Promise<WorkerCatalogResult>;
+  agenthubCatalogRemove: (id: string) => Promise<WorkerCatalogResult>;
+  agenthubCatalogModels: () => Promise<AgentHubModelOption[]>;
+  agenthubCatalogSetModel: (
+    id: string,
+    model: string | null,
+  ) => Promise<WorkerCatalogResult>;
+  onAgenthubWorkerChanged: (callback: () => void) => () => void;
 }
 
 declare global {

@@ -17,6 +17,8 @@ export default {
   tools: "ツール",
   schedules: "スケジュール",
   kanban: "カンバン",
+  workers: "Workers",
+
   gateway: "ゲートウェイ",
   settings: "設定",
   collapseSidebar: "サイドバーを折りたたむ",

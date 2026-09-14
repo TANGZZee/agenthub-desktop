@@ -9,6 +9,12 @@ import { cleanupTempMediaFiles } from "../media";
 import { closeDbConnection } from "../db";
 import { stopSshTunnel } from "../ssh-tunnel";
 import {
+  getDefaultOrchestrator,
+  stopWorkerToolServer,
+} from "../agenthub";
+
+
+import {
   hardenAttachedWebContents,
   hardenWebviewPreferences,
   isAllowedAppNavigationUrl,
@@ -126,7 +132,10 @@ export function startMainProcess(): void {
     // orphaned (reparented to PID 1) and keeps holding its local port, so each
     // relaunch leaks another tunnel and the port drifts (18642 → 61799 → …).
     stopSshTunnel();
+    getDefaultOrchestrator().shutdown();
+    void stopWorkerToolServer();
     closeDbConnection();
+
   });
 }
 

@@ -17,6 +17,8 @@ export default {
   tools: "כלים",
   schedules: "תזמונים",
   kanban: "קנבן",
+  workers: "Workers",
+
   gateway: "שער",
   settings: "הגדרות",
   collapseSidebar: "כווץ סרגל צד",

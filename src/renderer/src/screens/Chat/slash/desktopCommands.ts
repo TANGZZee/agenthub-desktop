@@ -70,7 +70,9 @@ export const DESKTOP_SLASH_COMMANDS: SlashCommandDefinition[] = [
       ["providers", "Open Providers page"],
       ["schedules", "Open Schedules page"],
       ["kanban", "Open Kanban board"],
+      ["workers", "Open Workers page"],
       ["gateway", "Open Gateway status page"],
+
     ] as const
   ).map(
     ([name, description]): SlashCommandDefinition => ({

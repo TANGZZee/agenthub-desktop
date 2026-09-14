@@ -17,6 +17,8 @@ export default {
   tools: "الإمكانيات",
   schedules: "الجدولة",
   kanban: "كانبان",
+  workers: "Workers",
+
   gateway: "البوابة",
   settings: "الإعدادات",
   collapseSidebar: "طي الشريط الجانبي",
