@@ -37,4 +37,5 @@ export default {
   registryCustomBadge: "通过基础 URL",
   registryAdded: "已将 {{name}} 添加到你的模型",
   registryLoadError: "加载模型注册表失败",
+  registryRemoveError: "未能移除该模型，请重试。",
 } as const;

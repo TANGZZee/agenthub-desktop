@@ -55,6 +55,19 @@ function isEditableTarget(t: EventTarget | null): boolean {
   );
 }
 
+// The AgentHub bridge is optional scenery on this page: a preload without it,
+// or a call that throws synchronously, must not abort the profile/Kanban
+// request. A synchronous throw inside `Promise.allSettled([...])` would reject
+// the whole status promise before it ever awaits the pending Kanban subprocess,
+// releasing the single-flight guard early and letting polls stack up.
+function optionalStatusCall<T>(call: () => Promise<T>): Promise<T> {
+  try {
+    return Promise.resolve(call());
+  } catch (error) {
+    return Promise.reject(error);
+  }
+}
+
 interface OfficeProps {
   profile?: string;
   visible?: boolean;
@@ -155,8 +168,10 @@ function Office({ visible, profile }: OfficeProps): React.JSX.Element {
             status: "running",
             profile: requestProfile,
           }),
-          window.hermesAPI.agenthubDispatch("worker.list", {}),
-          window.hermesAPI.agenthubCatalogList(),
+          optionalStatusCall(() =>
+            window.hermesAPI.agenthubDispatch("worker.list", {}),
+          ),
+          optionalStatusCall(() => window.hermesAPI.agenthubCatalogList()),
         ]);
       if (profilesResult.status === "rejected") throw profilesResult.reason;
       const runningTasks =

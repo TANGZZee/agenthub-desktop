@@ -16,9 +16,11 @@ import type {
 // it falls back to "custom" routing with the provider's apiBase.
 const SUPPORTED_PROVIDER_IDS = new Set(PROVIDERS.options.map((p) => p.value));
 
-// A library model as returned by `listModels()` — only the fields this modal
-// reads for "already added" detection.
+// A library model as returned by `listModels()` — the fields this modal reads
+// for "already added" detection and for removing an entry again. `id` is the
+// row's own identifier (a UUID); removing by model name never matches.
 interface LibModel {
+  id: string;
   provider: string;
   model: string;
   baseUrl: string;
@@ -32,6 +34,37 @@ const normUrl = (u: string): string => (u || "").trim().replace(/\/+$/, "");
 // exposed by two different custom endpoints is two distinct entries.
 const pickedKey = (provider: string, baseUrl: string, model: string): string =>
   `${provider}|${normUrl(baseUrl)}|${model}`;
+
+// How a registry provider is stored locally: hermes-agent-recognised providers
+// route by id (the backend resolves the endpoint), everything else attaches as
+// `custom` with the provider's apiBase. Both add and remove must derive this the
+// same way or their identity keys disagree.
+function resolveAttachment(prov: RegistryModelProvider): {
+  provider: string;
+  baseUrl: string;
+} {
+  const isSupported = SUPPORTED_PROVIDER_IDS.has(prov.id);
+  return {
+    provider: isSupported ? prov.id : "custom",
+    baseUrl: isSupported ? "" : (prov.apiBase || "").trim(),
+  };
+}
+
+// The library row a registry entry would have created, matched the same way
+// `addModel` dedups (provider + model id, plus endpoint for custom).
+function findSavedEntry(
+  models: LibModel[],
+  provider: string,
+  baseUrl: string,
+  model: string,
+): LibModel | undefined {
+  return models.find(
+    (saved) =>
+      saved.model === model &&
+      saved.provider === provider &&
+      (provider !== "custom" || normUrl(saved.baseUrl) === normUrl(baseUrl)),
+  );
+}
 
 // The curated-registry browser (models.json from hermes-registry). Lets the user
 // pick community-curated models into the local library. Relocated out of the
@@ -85,9 +118,7 @@ function RegistryBrowserModal({
     prov: RegistryModelProvider,
     model: RegistryModel,
   ): Promise<void> {
-    const isSupported = SUPPORTED_PROVIDER_IDS.has(prov.id);
-    const provider = isSupported ? prov.id : "custom";
-    const baseUrl = isSupported ? "" : (prov.apiBase || "").trim();
+    const { provider, baseUrl } = resolveAttachment(prov);
     const name = model.label || model.name;
     await window.hermesAPI.setModelDefinition(model.name, {
       name,
@@ -108,14 +139,31 @@ function RegistryBrowserModal({
   // registry row flips back to an Add button once listModels() reloads. The
   // shared model *definition* is intentionally kept: it may still be referenced
   // by another provider attachment of the same model id.
+  //
+  // `remove-model` keys on the library row's own `id` (a UUID), not the model
+  // name, so the matching row has to be found first — otherwise the removal
+  // silently no-ops and the button looks dead.
   async function unpick(
     prov: RegistryModelProvider,
     model: RegistryModel,
   ): Promise<void> {
-    await window.hermesAPI.removeModel(model.name);
+    const { provider, baseUrl } = resolveAttachment(prov);
+    const entry = findSavedEntry(models, provider, baseUrl, model.name);
+    if (!entry) {
+      // The row desynced from the library (e.g. removed elsewhere); reload so
+      // it renders the real state instead of a stale "Added" badge.
+      await loadModels();
+      return;
+    }
+    const removed = await window.hermesAPI.removeModel(entry.id);
+    if (!removed) {
+      toast.error(t("models.registryRemoveError"));
+      await loadModels();
+      return;
+    }
     setPicked((prev) => {
       const next = new Set(prev);
-      next.delete(pickedKey(prov.id, prov.apiBase || "", model.name));
+      next.delete(pickedKey(provider, baseUrl, model.name));
       return next;
     });
     await loadModels();
@@ -193,22 +241,18 @@ function RegistryBrowserModal({
                   </div>
                   <div className="registry-model-list">
                     {matched.map((model) => {
-                      const provider = supported ? prov.id : "custom";
-                      const baseUrl = supported
-                        ? ""
-                        : (prov.apiBase || "").trim();
+                      const { provider, baseUrl } = resolveAttachment(prov);
                       // A custom model is "added" only when the same id exists at
                       // the *same* endpoint; a different custom endpoint is a new
                       // entry (matching addModel's provider+model+baseUrl dedup).
                       const exists =
                         picked.has(pickedKey(provider, baseUrl, model.name)) ||
-                        models.some(
-                          (sm) =>
-                            sm.model === model.name &&
-                            sm.provider === provider &&
-                            (supported ||
-                              normUrl(sm.baseUrl) === normUrl(baseUrl)),
-                        );
+                        findSavedEntry(
+                          models,
+                          provider,
+                          baseUrl,
+                          model.name,
+                        ) !== undefined;
                       return (
                         <div key={model.name} className="registry-model-row">
                           <div className="registry-model-info">

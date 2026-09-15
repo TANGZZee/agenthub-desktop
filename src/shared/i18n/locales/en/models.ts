@@ -37,4 +37,5 @@ export default {
   registryCustomBadge: "via base URL",
   registryAdded: "{{name}} added to your models",
   registryLoadError: "Failed to load model registry",
+  registryRemoveError: "Could not remove that model. Try again.",
 } as const;

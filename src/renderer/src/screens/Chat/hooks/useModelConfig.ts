@@ -147,6 +147,11 @@ function providerServesModel(
     (item) => item.id === provider || item.configProvider === provider,
   );
   if (!entry) return true;
+  // An empty envKey means the provider does not authenticate through a stored
+  // environment variable at all — OAuth providers (Nous, openai-codex) and the
+  // local presets. `env[""]` is always undefined, so without this guard their
+  // already-saved models would be hidden even though nothing is missing.
+  if (!entry.envKey) return true;
   const value = env[entry.envKey];
   return typeof value === "string" && value.trim().length > 0;
 }

@@ -57,3 +57,15 @@ A selected model replaces the local default without inheriting another provider�
 ### Remote credential boundary
 
 Remote and SSH selections remain usable without local provider secrets. Missing remote model selections cannot be filled from an unrelated local default.
+
+## Registry removal
+
+Registry rows flip back to an Add button by removing the library row the pick created, which is keyed on that row's own UUID rather than the model name.
+
+[[src/renderer/src/components/RegistryBrowserModal.tsx#findSavedEntry]] matches the row exactly as `addModel` dedups (provider + model id, plus endpoint for `custom`), and both pick and remove derive the stored provider/endpoint through the same helper so their identity keys cannot disagree. A failed removal surfaces `models.registryRemoveError` instead of leaving a button that looks dead. Covered by [[src/renderer/src/components/RegistryBrowserModal.test.tsx]].
+
+## Keyless providers stay visible
+
+The chat picker hides models whose provider has no usable credential, but a provider that authenticates outside `env` — the OAuth providers (Nous, openai-codex) and the local presets, all authored with an empty `envKey` — has nothing to look up and must not be treated as unconfigured.
+
+[[src/renderer/src/screens/Chat/hooks/useModelConfig.ts#providerServesModel]] therefore returns `true` for an empty `envKey`, alongside its existing escapes for `custom`, the currently selected model, an unloaded env, and providers with no setup entry.
