@@ -18809,3 +18809,19 @@ body:has(.shell-vibrant),
   line-height: 1.5;
   color: var(--text-muted);
 }
+
+.registry-model-remove {
+  cursor: pointer;
+  gap: 6px;
+  border: none;
+  font-family: var(--font-sans);
+  transition: opacity var(--transition);
+}
+
+.registry-model-remove:hover {
+  opacity: 0.75;
+}
+
+.registry-model-remove svg:last-child {
+  opacity: 0.55;
+}

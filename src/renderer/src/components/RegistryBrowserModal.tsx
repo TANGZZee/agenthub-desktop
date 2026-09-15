@@ -104,6 +104,24 @@ function RegistryBrowserModal({
     toast.success(t("models.registryAdded", { name }));
   }
 
+  // Remove a library entry the user previously picked from the registry. The
+  // registry row flips back to an Add button once listModels() reloads. The
+  // shared model *definition* is intentionally kept: it may still be referenced
+  // by another provider attachment of the same model id.
+  async function unpick(
+    prov: RegistryModelProvider,
+    model: RegistryModel,
+  ): Promise<void> {
+    await window.hermesAPI.removeModel(model.name);
+    setPicked((prev) => {
+      const next = new Set(prev);
+      next.delete(pickedKey(prov.id, prov.apiBase || "", model.name));
+      return next;
+    });
+    await loadModels();
+    onModelAdded?.();
+  }
+
   return (
     <div className="models-modal-overlay" onClick={onClose}>
       <div
@@ -207,10 +225,17 @@ function RegistryBrowserModal({
                             )}
                           </div>
                           {exists ? (
-                            <span className="registry-model-added">
+                            <button
+                              type="button"
+                              className="registry-model-added registry-model-remove"
+                              onClick={() => void unpick(prov, model)}
+                              title={t("common.remove")}
+                              aria-label={`${t("common.remove")} ${model.label || model.name}`}
+                            >
                               <Check size={14} />
                               {t("models.registryAddedLabel")}
-                            </span>
+                              <X size={12} />
+                            </button>
                           ) : (
                             <button
                               className="btn btn-secondary btn-sm"

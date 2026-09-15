@@ -95,6 +95,31 @@ function groupModelsByProvider(models: SavedModelForPicker[]): ModelGroup[] {
   return Array.from(groupMap.values());
 }
 
+/**
+ * Whether a model from `provider` belongs in the picker. Providers whose API
+ * key env var is unset have no way to serve a request, so their models only
+ * clutter the list; they reappear automatically once a key is saved. Unknown
+ * mappings and `custom` providers (whose keys resolve per host) are always
+ * kept, and the currently selected model is never hidden.
+ */
+function providerServesModel(
+  provider: string,
+  model: string,
+  currentProvider: string,
+  currentModel: string,
+  env: Record<string, string> | null,
+): boolean {
+  if (provider === "custom") return true;
+  if (provider === currentProvider && model === currentModel) return true;
+  if (env === null) return true;
+  const entry = PROVIDERS.setup.find(
+    (item) => item.id === provider || item.configProvider === provider,
+  );
+  if (!entry) return true;
+  const value = env[entry.envKey];
+  return typeof value === "string" && value.trim().length > 0;
+}
+
 export function useModelConfig(profile?: string): UseModelConfigResult {
   const { t } = useI18n();
   const [currentModel, setCurrentModel] = useState("");
@@ -102,22 +127,57 @@ export function useModelConfig(profile?: string): UseModelConfigResult {
   const [currentBaseUrl, setCurrentBaseUrl] = useState("");
   const [modelGroups, setModelGroups] = useState<ModelGroup[]>([]);
   const [savedModels, setSavedModels] = useState<SavedModelForPicker[]>([]);
+  // Env values for the active profile. `null` = not loaded yet (show
+  // everything) or load failed (fail open rather than hide usable models).
+  const [configuredEnv, setConfiguredEnv] = useState<Record<
+    string,
+    string
+  > | null>(null);
   const loadSeqRef = useRef(0);
+
+  useEffect(() => {
+    let alive = true;
+    window.hermesAPI
+      .getEnv(profile)
+      .then((env) => {
+        if (alive) setConfiguredEnv(env ?? {});
+      })
+      .catch(() => {
+        if (alive) setConfiguredEnv(null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [profile]);
 
   const ollamaCloudDiscovery = useDiscoveredModels({
     provider: OLLAMA_CLOUD_PROVIDER,
     profile,
     enabled: true,
   });
-
   const modelsForPicker = useMemo(
     () =>
       mergeLiveOllamaCloudModels(
-        savedModels,
+        savedModels.filter((m) =>
+          providerServesModel(
+            m.provider,
+            m.model,
+            currentProvider,
+            currentModel,
+            configuredEnv,
+          ),
+        ),
         ollamaCloudDiscovery.models,
         ollamaCloudDiscovery.status,
       ),
-    [savedModels, ollamaCloudDiscovery.models, ollamaCloudDiscovery.status],
+    [
+      savedModels,
+      ollamaCloudDiscovery.models,
+      ollamaCloudDiscovery.status,
+      currentProvider,
+      currentModel,
+      configuredEnv,
+    ],
   );
 
   const reload = useCallback(async (): Promise<void> => {

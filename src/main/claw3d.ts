@@ -822,6 +822,7 @@ function killProcessTree(proc: ChildProcess): void {
       // /T: Terminate the specified process and any child processes started by it
       execFileSync("taskkill", ["/F", "/T", "/PID", String(proc.pid)], {
         stdio: "ignore",
+        windowsHide: true,
       });
     } catch (err) {
       console.error(

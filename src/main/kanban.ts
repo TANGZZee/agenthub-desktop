@@ -130,6 +130,7 @@ async function runKanban(
     timeout: opts.timeoutMs ?? KANBAN_TIMEOUT_MS,
     env: { ...process.env, PATH: getEnhancedPath() },
     maxBuffer: 16 * 1024 * 1024,
+    windowsHide: true,
   };
 
   return new Promise((resolve) => {
