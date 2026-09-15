@@ -21,6 +21,8 @@ export type OfficeAgent = {
   gatewayRunning?: boolean;
   /** Number of running Kanban cards currently assigned to this profile. */
   activeTaskCount?: number;
+  /** Set for AgentHub workers: office scenery with live status, not a profile. */
+  workerId?: string;
   /** Org position; defaults to "employee" when unset. The CEO gets a desk. */
   position?: AgentPosition;
 };

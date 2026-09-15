@@ -23,7 +23,11 @@ import oneChatIcon from "../../assets/images/one-chat.svg";
 import OneChatModal from "./OneChatModal";
 import Office3D from "./office3d/Office3D";
 import RepInteractionPanel from "./RepInteractionPanel";
-import { officeAgentsChanged, profilesToOfficeAgents } from "./office3d/agents";
+import {
+  officeAgentsChanged,
+  profilesToOfficeAgents,
+  workersToOfficeAgents,
+} from "./office3d/agents";
 import {
   getRepresentative,
   type RepActionId,
@@ -144,22 +148,66 @@ function Office({ visible, profile }: OfficeProps): React.JSX.Element {
 
     const requestProfile = profile;
     const promise = (async (): Promise<OfficeAgent[]> => {
-      const [profilesResult, runningTasksResult] = await Promise.allSettled([
-        window.hermesAPI.listProfiles(),
-        window.hermesAPI.kanbanListTasks({
-          status: "running",
-          profile: requestProfile,
-        }),
-      ]);
+      const [profilesResult, runningTasksResult, workersResult, catalogResult] =
+        await Promise.allSettled([
+          window.hermesAPI.listProfiles(),
+          window.hermesAPI.kanbanListTasks({
+            status: "running",
+            profile: requestProfile,
+          }),
+          window.hermesAPI.agenthubDispatch("worker.list", {}),
+          window.hermesAPI.agenthubCatalogList(),
+        ]);
       if (profilesResult.status === "rejected") throw profilesResult.reason;
       const runningTasks =
         runningTasksResult.status === "fulfilled"
           ? runningTasksResult.value
           : null;
-      return profilesToOfficeAgents(
+      const profileAgents = profilesToOfficeAgents(
         profilesResult.value,
         runningTasks?.success ? (runningTasks.data ?? []) : null,
       );
+
+      // AgentHub workers join as read-only scenery: live working/idle/error
+      // status, but never chat, bank, or world-action participants. Any
+      // worker/catalog failure just drops the workers for this refresh.
+      try {
+        if (workersResult.status !== "fulfilled" || !workersResult.value.ok) {
+          return profileAgents;
+        }
+        const payload = workersResult.value.result as {
+          workers?: Array<{ id: string; name: string; running: number }>;
+          runs?: Array<{ workerId: string; status: string }>;
+        } | null;
+        const connected = new Set(
+          catalogResult.status === "fulfilled"
+            ? catalogResult.value.entries
+                .filter((entry) => entry.installed && entry.enabled)
+                .map((entry) => entry.id)
+            : [],
+        );
+        const enabledWorkers = (payload?.workers ?? []).filter((worker) =>
+          connected.has(worker.id),
+        );
+        const latestStatus = new Map<string, string>();
+        for (const run of payload?.runs ?? []) {
+          if (!latestStatus.has(run.workerId)) {
+            latestStatus.set(run.workerId, run.status);
+          }
+        }
+        return profileAgents.concat(
+          workersToOfficeAgents(
+            enabledWorkers.map((worker) => ({
+              id: worker.id,
+              name: worker.name,
+              runningCount: worker.running ?? 0,
+              latestStatus: latestStatus.get(worker.id) ?? null,
+            })),
+          ),
+        );
+      } catch {
+        return profileAgents;
+      }
     })();
     const request = { profile: requestProfile, promise };
     statusRequestRef.current = request;
@@ -477,13 +525,20 @@ function Office({ visible, profile }: OfficeProps): React.JSX.Element {
   const selectedIsCeo = selectedAgent?.position === "ceo";
 
   // Default the rep panel's agent picker to the active profile (falling back to
-  // the first agent) so it opens on the current profile instead of empty.
+
+  // Profile-only view for the flows that act *on* a Hermes profile: the office
+  // chat and the bank panel. AgentHub workers are read-only scenery, so they
+  // never appear in these pickers.
+  const profileOnlyAgents = useMemo<OfficeAgent[]>(
+    () => agents.filter((agent) => !agent.workerId),
+    [agents],
+  );
   const defaultAgentId = useMemo(
     () =>
-      positionedAgents.some((a) => a.id === profile)
+      profileOnlyAgents.some((a) => a.id === profile)
         ? (profile ?? null)
-        : (positionedAgents[0]?.id ?? null),
-    [positionedAgents, profile],
+        : (profileOnlyAgents[0]?.id ?? null),
+    [profileOnlyAgents, profile],
   );
   const selectedStatusColor =
     selectedAgent?.status === "working"
@@ -939,14 +994,14 @@ function Office({ visible, profile }: OfficeProps): React.JSX.Element {
         <OneChatModal
           open={chatOpen}
           onClose={() => setChatOpen(false)}
-          agents={positionedAgents}
+          agents={profileOnlyAgents}
           onWorldActions={handleWorldActions}
         />
 
         {activeRep && (
           <RepInteractionPanel
             rep={activeRep}
-            agents={positionedAgents}
+            agents={profileOnlyAgents}
             initialAgentId={selectedId ?? defaultAgentId}
             visible={visible ?? true}
             autoAction={autoAction}

@@ -69,3 +69,9 @@ npm installs Windows CLIs as `.cmd` shims, which Node refuses to spawn directly,
 Each connected agent can be pointed at one model from the Hermes model library, and can also name a model explicitly for itself.
 
 Hermes keeps owning providers, keys, and endpoints: AgentHub stores only a per-agent choice in the same settings file, so connecting an agent never rewrites that CLI's own configuration. The choice replaces a `{model}` placeholder in the worker profile's argv; when it is cleared, the placeholder and the flag before it are dropped so the CLI keeps its default. A value outside the library, or one containing characters that must not reach a command line, is refused.
+
+## Office mapping
+
+Connected workers appear in the Office 3D scene as read-only agents with live status.
+
+[[src/renderer/src/screens/Office/office3d/agents.ts#workerToOfficeAgent]] maps each connected worker to an office agent whose status follows its runs: in-flight reads as working, failed / timed_out as error, otherwise idle. The `workerId` marker excludes them from the office chat and bank pickers, so workers never join Hermes-profile actions — the office observes them, it does not act for them.

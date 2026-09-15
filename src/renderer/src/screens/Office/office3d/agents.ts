@@ -117,6 +117,46 @@ export function profilesToOfficeAgents(
   });
 }
 
+/** One connected AgentHub worker as surfaced by `worker.list`. */
+export interface OfficeWorkerInput {
+  id: string;
+  name: string;
+  model?: string | null;
+  /** Number of in-flight runs; > 0 reads as working. */
+  runningCount: number;
+  /** Most recent run status; failed / timed_out read as error. */
+  latestStatus?: string | null;
+}
+
+/**
+ * Map a connected AgentHub worker to an office agent. Workers are office
+ * scenery with live status: they walk and sit at desks like profiles, but they
+ * are not Hermes profiles — no chat, no bank, no world actions. The `workerId`
+ * marker lets consumers exclude them from profile-only flows.
+ */
+export function workerToOfficeAgent(worker: OfficeWorkerInput): OfficeAgent {
+  const seed = `worker:${worker.id}`;
+  const failed =
+    worker.latestStatus === "failed" || worker.latestStatus === "timed_out";
+  return {
+    id: seed,
+    workerId: worker.id,
+    name: worker.name,
+    subtitle: worker.model || "AgentHub CLI",
+    status: worker.runningCount > 0 ? "working" : failed ? "error" : "idle",
+    color: AGENT_COLORS[hashName(seed) % AGENT_COLORS.length],
+    item: "desk",
+    avatarProfile: createAgentAvatarProfileFromSeed(seed),
+    position: "employee",
+  };
+}
+
+export function workersToOfficeAgents(
+  workers: OfficeWorkerInput[],
+): OfficeAgent[] {
+  return workers.map(workerToOfficeAgent);
+}
+
 export function officeAgentsChanged(
   previous: OfficeAgent[],
   next: OfficeAgent[],
@@ -133,6 +173,7 @@ export function officeAgentsChanged(
       before.model !== agent.model ||
       before.provider !== agent.provider ||
       before.gatewayRunning !== agent.gatewayRunning ||
+      before.workerId !== agent.workerId ||
       before.activeTaskCount !== agent.activeTaskCount
     );
   });
