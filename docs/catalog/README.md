@@ -121,19 +121,23 @@ node scripts/validate-market-catalog.mjs [路径]
 
 ---
 
-## 开启网页托管（一次性）
+## 网页托管（已开启）
 
-仓库 → **Settings → Pages → Source: Deploy from a branch**
-→ Branch 选 `migration/hermes-desktop-base`，Folder 选 `/docs` → Save。
+GitHub Pages 已开启：Source = **Deploy from a branch**，
+Branch = `migration/hermes-desktop-base`，Folder = `/docs`。
 
-几分钟后地址是：
+地址：
 
 ```
 https://tangzzee.github.io/agenthub-desktop/catalog/
 ```
 
-> `docs/` 下还有内部工程文档，从 `/docs` 发布会把它们一并公开。仓库本来就是公开的，
-> 所以没有新增暴露；若以后想收紧，改成只发布 `docs/catalog` 的 Actions 工作流即可。
+`docs/.nojekyll` 是必需的：`docs/` 下有两个上游内部文档含 `{{` 片段，老式的 Jekyll
+构建会解析失败（GitHub 只报一句 `Page build failed.`）。这个空文件让 GitHub 跳过
+Jekyll，直接按静态文件发布。
+
+> `docs/` 下还有内部工程文档，从 `/docs` 发布会把它们一并公开；仓库是公开的，
+> 所以没有新增暴露。若以后想收紧，改成只发布 `docs/catalog` 的 Actions 工作流即可。
 
 本地预览（`file://` 打开会被浏览器拦住读数据，要用本地服务器）：
 
