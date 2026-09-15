@@ -139,9 +139,11 @@ import {
 import {
   freshDashboardWebSocketUrl,
   getDashboardStatus,
+  resumeDashboardSpawns,
   startDashboard,
-  stopAllDashboards,
+  stopAllDashboardsAndWait,
   stopDashboard,
+  suspendDashboardSpawns,
 } from "../dashboard";
 import {
   clearRemoteOAuthSession,
@@ -880,12 +882,21 @@ export function registerIpcHandlers(context: IpcContext): void {
       // Windows they hold its native extensions (.pyd) open. `hermes update`
       // refuses to swap dependencies underneath them, so updating from this
       // screen could never succeed while the app was running — it just failed
-      // with a bare exit code. Stop what this app supervises first; a
-      // dashboard is relaunched on demand afterwards.
-      stopAllDashboards();
-      await runHermesUpdate((progress: InstallProgress) => {
-        event.sender.send("install-progress", progress);
-      });
+      // with a bare exit code.
+      //
+      // Stopping them once is not enough: the renderer reconnects and spawns a
+      // fresh dashboard seconds later, recreating the blocker mid-update. So
+      // starts are refused for the whole run, and we wait for the processes to
+      // actually exit before handing off.
+      suspendDashboardSpawns("Hermes Agent update in progress");
+      try {
+        await stopAllDashboardsAndWait();
+        await runHermesUpdate((progress: InstallProgress) => {
+          event.sender.send("install-progress", progress);
+        });
+      } finally {
+        resumeDashboardSpawns();
+      }
       const compat = ensureLocalDashboardCompatibility();
       if (!compat.ok) {
         event.sender.send("install-progress", {

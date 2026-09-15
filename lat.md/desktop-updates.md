@@ -58,7 +58,13 @@ The global packaging product name supplies Electron Builder's Linux install-dire
 
 The engine card updates the Python install in place, so the desktop has to release its own venv processes before the update can run at all.
 
-`hermes update` refuses to swap dependencies while another process runs from the install's venv, because on Windows those keep the native extensions (`.pyd`) locked. The desktop's own dashboards are exactly such processes, so [[src/main/ipc/register.ts]] stops them with `stopAllDashboards()` before the update; one is relaunched on demand afterwards. Without that step the in-app update could never succeed while the app was running, and surfaced only as `Update failed (exit code 2).`
+`hermes update` refuses to swap dependencies while another process runs from the install's venv, because on Windows those keep the native extensions (`.pyd`) locked. The desktop's own dashboards are exactly such processes, so [[src/main/ipc/register.ts]] suspends dashboard starts for the run, stops every supervised dashboard, and waits for those processes to actually exit before handing off. Without that the in-app update could not succeed while the app was running.
+
+Three details make it hold:
+
+- **Stop by registry key, never by re-resolving it.** The registry is keyed by `profileKey(profile)`, which falls back to the *active* profile name. Looking a stored `"default"` entry back up as `undefined` therefore resolved to the active profile's key and silently missed it, so one dashboard survived every stop and kept the venv locked. [[src/main/dashboard-registry.ts#drainAndKillDashboards]] drains the registry by value instead.
+- **Tree-kill.** The CLI runs the real server from its own runtime python as a child of the process the desktop spawned, so signalling only the supervisor orphans the server with its port and loaded state. `killDashboardTree` uses `taskkill /F /T` on Windows.
+- **Suspend, don't just stop once.** The renderer reconnects and spawns a fresh dashboard within seconds, which recreated the blocker mid-update. `suspendDashboardSpawns` makes `startDashboard` report "not running" for the whole run, so the renderer falls back to the non-dashboard transport until it finishes.
 
 The updater runs non-interactively (`--yes`, required because the child's stdin is ignored) and parks local source edits in git stash (`--keep-stash`, the flag upstream documents for the desktop updater).
 

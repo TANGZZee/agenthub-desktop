@@ -19,6 +19,11 @@ import {
   HERMES_REPO,
 } from "./installer";
 import { buildLocalDashboardCliArgs } from "./dashboard-launch";
+import {
+  drainAndKillDashboards,
+  killDashboardTree,
+  waitForProcessesToExit,
+} from "./dashboard-registry";
 import { dashboardWebSocketUrlForRenderer } from "./dashboard-websocket-relay";
 import { ensureLocalDashboardCompatibility } from "./hermes-agent-compat";
 import { HIDDEN_SUBPROCESS_OPTIONS } from "./process-options";
@@ -34,6 +39,7 @@ import { sshEnsureDashboard } from "./ssh-remote";
 import {
   getActiveProfileNameSync,
   normalizeProfileName,
+  pidIsAlive,
   profileHome,
 } from "./utils";
 
@@ -72,6 +78,26 @@ function resolveProfile(profile?: string): string | undefined {
 
 function profileKey(profile?: string): string {
   return resolveProfile(profile) ?? "default";
+}
+
+// While an engine update is swapping the venv, nothing may run from it: on
+// Windows a live venv process holds the native extensions (.pyd) open and
+// `hermes update` refuses to replace them. Stopping the dashboards once was not
+// enough — the renderer reconnects and spawns a fresh one mid-update, which
+// recreates the blocker seconds later. Starts are refused for the duration
+// instead, so the venv stays releasable.
+let dashboardSpawnsSuspended = "";
+
+export function suspendDashboardSpawns(reason: string): void {
+  dashboardSpawnsSuspended = reason;
+}
+
+export function resumeDashboardSpawns(): void {
+  dashboardSpawnsSuspended = "";
+}
+
+export function dashboardSpawnsAreSuspended(): boolean {
+  return dashboardSpawnsSuspended !== "";
 }
 
 function inactiveSshDashboardStatus(
@@ -629,6 +655,18 @@ export async function startDashboard(
     return getSshDashboardStatusForConfig(config, profile);
   }
 
+  // Refused while an engine update is swapping the venv — see
+  // `suspendDashboardSpawns`. Reported as "not running" rather than an error so
+  // the renderer simply falls back to the non-dashboard transport until the
+  // update finishes.
+  if (dashboardSpawnsAreSuspended()) {
+    return {
+      supported: true,
+      running: false,
+      error: `Dashboard is paused: ${dashboardSpawnsSuspended}`,
+    };
+  }
+
   const existing = getManagedDashboard(profile);
   if (existing) {
     return {
@@ -744,16 +782,28 @@ export function stopDashboard(profile?: string): boolean {
   const managed = dashboards.get(key);
   if (!managed) return true;
   dashboards.delete(key);
-  try {
-    managed.proc.kill();
-  } catch {
-    return false;
-  }
+  // Tree-kill: the CLI runs the real server from its runtime python as a child
+  // of the process we spawned, so signalling only the supervisor would orphan
+  // it with the port and its loaded state.
+  killDashboardTree(managed);
   return true;
 }
 
 export function stopAllDashboards(): void {
-  for (const key of [...dashboards.keys()]) {
-    stopDashboard(key === "default" ? undefined : key);
-  }
+  drainAndKillDashboards(dashboards);
+}
+
+/**
+ * Stop every dashboard this app supervises and wait for the processes to
+ * actually exit, returning any that outlived the deadline.
+ *
+ * `hermes update` re-checks the venv seconds after we hand off, so a process
+ * that is still tearing down would still be refused.
+ */
+export async function stopAllDashboardsAndWait(
+  timeoutMs = 15_000,
+): Promise<number[]> {
+  const pids = drainAndKillDashboards(dashboards);
+  if (pids.length === 0) return [];
+  return waitForProcessesToExit(pids, pidIsAlive, timeoutMs);
 }
