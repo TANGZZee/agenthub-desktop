@@ -59,7 +59,7 @@ export const ReasoningRow = memo(function ReasoningRow({
             <OrbLoader
               state="solving"
               size={20}
-              aria-label="thinking-loading"
+              aria-label={t("chat.a11y.thinkingLoading")}
               className="chat-reasoning-group-spinner"
             />
           ) : (
@@ -167,15 +167,20 @@ export function orderToolActivityItems(items: ToolItem[]): ToolItem[] {
   return ordered;
 }
 
-function resultMeta(msg: ToolResultMessage): string {
+/** Minimal shape of `useI18n().t`, so the pure row helpers can be localized. */
+type Translate = (key: string, options?: Record<string, unknown>) => string;
+
+function resultMeta(msg: ToolResultMessage, t: Translate): string {
   const lines = countLines(msg.content);
-  const base = `${lines} ${lines === 1 ? "line" : "lines"}`;
+  const base = t("chat.lineCount", { count: lines });
   const n = msg.attachments?.length ?? 0;
-  return n > 0 ? `${base} · ${n} attachment${n === 1 ? "" : "s"}` : base;
+  return n > 0
+    ? `${base} · ${t("chat.attachmentCount", { count: n })}`
+    : base;
 }
 
-function itemDetail(msg: ToolItem): string {
-  return isToolCall(msg) ? summariseArgs(msg.args) : resultMeta(msg);
+function itemDetail(msg: ToolItem, t: Translate): string {
+  return isToolCall(msg) ? summariseArgs(msg.args) : resultMeta(msg, t);
 }
 
 const ToolActivityItem = memo(function ToolActivityItem({
@@ -183,6 +188,7 @@ const ToolActivityItem = memo(function ToolActivityItem({
 }: {
   msg: ToolItem;
 }): React.JSX.Element {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const call = isToolCall(msg);
   const failed = call && msg.status === "failed";
@@ -213,7 +219,7 @@ const ToolActivityItem = memo(function ToolActivityItem({
         <span className="chat-tool-item-name">
           {humanizeToolName(msg.name)}
         </span>
-        <span className="chat-tool-item-detail">{itemDetail(msg)}</span>
+        <span className="chat-tool-item-detail">{itemDetail(msg, t)}</span>
       </button>
       <div
         className={`chat-tool-collapse${open ? " chat-tool-collapse--open" : ""}`}
@@ -255,9 +261,10 @@ export const ToolActivityGroup = memo(function ToolActivityGroup({
   /** Appearance of the chatting agent, shown once the avatar goes idle. */
   agent?: AgentAvatarInfo;
 }): React.JSX.Element {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const last = items[items.length - 1];
-  const detail = itemDetail(last);
+  const detail = itemDetail(last, t);
   const title = toolActivityGroupTitle(items);
   const soloTool = singleToolName(items);
   const orderedItems = orderToolActivityItems(items);
@@ -286,7 +293,7 @@ export const ToolActivityGroup = memo(function ToolActivityGroup({
             <OrbLoader
               state="working"
               size={20}
-              aria-label="tool-loading"
+              aria-label={t("chat.a11y.toolLoading")}
               className="chat-tool-group-spinner"
             />
           ) : soloTool ? (

@@ -96,6 +96,37 @@ function groupModelsByProvider(models: SavedModelForPicker[]): ModelGroup[] {
 }
 
 /**
+ * Whether two grouped lists render identically. The grouping effect below
+ * rebuilds groups whenever its input array changes identity — which happens on
+ * every render while the live-discovery hook returns a fresh array — so
+ * comparing content first keeps a no-op update from re-rendering forever.
+ */
+function sameModelGroups(left: ModelGroup[], right: ModelGroup[]): boolean {
+  if (left.length !== right.length) return false;
+  for (let i = 0; i < left.length; i += 1) {
+    const a = left[i];
+    const b = right[i];
+    if (a.provider !== b.provider || a.providerLabel !== b.providerLabel) {
+      return false;
+    }
+    if (a.models.length !== b.models.length) return false;
+    for (let j = 0; j < a.models.length; j += 1) {
+      const x = a.models[j];
+      const y = b.models[j];
+      if (
+        x.provider !== y.provider ||
+        x.model !== y.model ||
+        x.label !== y.label ||
+        x.baseUrl !== y.baseUrl
+      ) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+/**
  * Whether a model from `provider` belongs in the picker. Providers whose API
  * key env var is unset have no way to serve a request, so their models only
  * clutter the list; they reappear automatically once a key is saved. Unknown
@@ -134,22 +165,32 @@ export function useModelConfig(profile?: string): UseModelConfigResult {
     string
   > | null>(null);
   const loadSeqRef = useRef(0);
-
   useEffect(() => {
+    // Older main processes (and test doubles) may not expose `getEnv`. Treat a
+    // missing handler like an unresolved read: `null` keeps every model visible
+    // rather than hiding usable ones behind an unknown key state.
+    const readEnv = window.hermesAPI?.getEnv;
+    if (typeof readEnv !== "function") {
+      setConfiguredEnv(null);
+      return;
+    }
     let alive = true;
-    window.hermesAPI
-      .getEnv(profile)
-      .then((env) => {
-        if (alive) setConfiguredEnv(env ?? {});
-      })
-      .catch(() => {
-        if (alive) setConfiguredEnv(null);
-      });
+    try {
+      readEnv
+        .call(window.hermesAPI, profile)
+        .then((env) => {
+          if (alive) setConfiguredEnv(env ?? {});
+        })
+        .catch(() => {
+          if (alive) setConfiguredEnv(null);
+        });
+    } catch {
+      setConfiguredEnv(null);
+    }
     return () => {
       alive = false;
     };
   }, [profile]);
-
   const ollamaCloudDiscovery = useDiscoveredModels({
     provider: OLLAMA_CLOUD_PROVIDER,
     profile,
@@ -200,7 +241,12 @@ export function useModelConfig(profile?: string): UseModelConfigResult {
   }, [reload]);
 
   useEffect(() => {
-    setModelGroups(groupModelsByProvider(modelsForPicker));
+    const next = groupModelsByProvider(modelsForPicker);
+    // Keep the previous array when nothing changed: the input identity churns
+    // every render, so an unconditional set would loop.
+    setModelGroups((previous) =>
+      sameModelGroups(previous, next) ? previous : next,
+    );
   }, [modelsForPicker]);
 
   useEffect(() => {

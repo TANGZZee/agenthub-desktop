@@ -278,7 +278,11 @@ export const MessageRow = memo(function MessageRow({
         )}
         {msg.isSlashLoader ? (
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <OrbLoader state="working" size={20} aria-label="running-command" />
+            <OrbLoader
+              state="working"
+              size={20}
+              aria-label={t("chat.a11y.runningCommand")}
+            />
             <span>{msg.content}</span>
           </div>
         ) : (

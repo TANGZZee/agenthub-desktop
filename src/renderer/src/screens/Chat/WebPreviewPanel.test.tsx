@@ -100,7 +100,7 @@ describe("WebPreviewPanel annotation lifecycle", () => {
     navigation.url = "http://localhost:3000/#hydrated";
     act(() => webview.dispatchEvent(navigation));
 
-    fireEvent.click(getByTitle("Annotate page"));
+    fireEvent.click(getByTitle("chat.webPreview.annotate"));
     await waitFor(() => {
       expect(inspectWebPreview).toHaveBeenCalledWith(42);
     });
@@ -114,7 +114,7 @@ describe("WebPreviewPanel annotation lifecycle", () => {
     });
 
     const commentInput = await waitFor(() => {
-      const input = getByPlaceholderText("Add a comment…");
+      const input = getByPlaceholderText("chat.webPreview.commentPlaceholder");
       expect(input).toBe(document.activeElement);
       return input;
     });
@@ -126,7 +126,7 @@ describe("WebPreviewPanel annotation lifecycle", () => {
       height: "80px",
     });
 
-    const submitButton = getByTitle("Add annotation to chat");
+    const submitButton = getByTitle("chat.webPreview.addAnnotation");
     expect(submitButton).toBeDisabled();
     fireEvent.change(commentInput, {
       target: { value: "  Make this heading smaller  " },
@@ -170,14 +170,14 @@ describe("WebPreviewPanel annotation lifecycle", () => {
     webview.getWebContentsId = () => 77;
 
     act(() => webview.dispatchEvent(new Event("dom-ready")));
-    fireEvent.click(getByTitle("Annotate page"));
+    fireEvent.click(getByTitle("chat.webPreview.annotate"));
     await waitFor(() => expect(inspectWebPreview).toHaveBeenCalledTimes(1));
 
-    fireEvent.click(getByTitle("Stop annotating"));
+    fireEvent.click(getByTitle("chat.webPreview.stopAnnotating"));
     await waitFor(() => {
       expect(cancelWebPreviewInspection).toHaveBeenCalledWith(77);
     });
-    fireEvent.click(getByTitle("Annotate page"));
+    fireEvent.click(getByTitle("chat.webPreview.annotate"));
     await waitFor(() => expect(inspectWebPreview).toHaveBeenCalledTimes(2));
 
     await act(async () => {
@@ -198,10 +198,12 @@ describe("WebPreviewPanel annotation lifecycle", () => {
       });
       await secondInspection.promise;
     });
-    const input = await waitFor(() => getByPlaceholderText("Add a comment…"));
+    const input = await waitFor(() =>
+      getByPlaceholderText("chat.webPreview.commentPlaceholder"),
+    );
     fireEvent.keyDown(input, { key: "Escape" });
     await waitFor(() => {
-      expect(getByTitle("Annotate page")).toBeInTheDocument();
+      expect(getByTitle("chat.webPreview.annotate")).toBeInTheDocument();
       expect(cancelWebPreviewInspection).toHaveBeenCalledTimes(2);
     });
   });

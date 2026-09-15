@@ -1,8 +1,13 @@
 import { useCallback, useEffect, useRef } from "react";
+import { useI18n } from "../../../components/useI18n";
 import type { ChatInputHandle } from "../ChatInput";
 import { createTurn, shouldSendToAgent } from "../chatMessages";
 import type { SlashExecOutcome } from "../slashExec";
 import { handleSlashCommand } from "../slash/handleSlashCommand";
+import {
+  renderLocalizedSlashHelp,
+  translateWithFallback,
+} from "../slash/localizeSlashCommand";
 import { parseSlashCommand } from "../slash/parseSlashCommand";
 import type {
   PreparedModelSubmission,
@@ -131,6 +136,7 @@ export function useChatActions({
   enqueueMessage,
   abortDashboard,
 }: UseChatActionsArgs): UseChatActionsResult {
+  const { t } = useI18n();
   const messagesRef = useRef(messages);
   const isLoadingRef = useRef(isLoading);
   const sessionModelRef = useRef(sessionModel);
@@ -228,12 +234,20 @@ export function useChatActions({
       if (runBackgroundViaDashboard && !hasAttachments) {
         pushUser(`💭 ${question}`, "user-btw");
         const r = await runBackgroundViaDashboard(question);
-        if (r.error) addAgentMessage?.(`error: ${r.error}`);
+        if (r.error)
+          addAgentMessage?.(
+            translateWithFallback(
+              t,
+              "chat.slash.errorPrefix",
+              `error: ${r.error}`,
+              { message: r.error },
+            ),
+          );
         return;
       }
       if (!isLoadingRef.current) await runQuickAsk(question, attachments);
     },
-    [runBackgroundViaDashboard, pushUser, addAgentMessage, runQuickAsk],
+    [runBackgroundViaDashboard, pushUser, addAgentMessage, runQuickAsk, t],
   );
 
   const handleSend = useCallback(
@@ -285,7 +299,12 @@ export function useChatActions({
               id: pendingId,
               role: "agent",
               isSlashLoader: true,
-              content: `Running ${text}…`,
+              content: translateWithFallback(
+                t,
+                "chat.slash.running",
+                `Running ${text}…`,
+                { command: text },
+              ),
             },
           ]);
         }
@@ -310,12 +329,16 @@ export function useChatActions({
           sessionId: hermesSessionId ?? undefined,
           attachments: attachments ?? [],
           isModelBusy: isLoadingRef.current,
+          t,
           executeAgentSlash:
             execSlashViaDashboard ??
             (async () => ({
               kind: "error",
-              message:
+              message: translateWithFallback(
+                t,
+                "chat.slash.gatewayRequired",
                 "This command requires the Hermes Agent gateway. Switch chat transport to Auto or Dashboard and try again.",
+              ),
             })),
           submitPrompt: async (submission: PreparedModelSubmission) => {
             removePending();
@@ -330,24 +353,8 @@ export function useChatActions({
           },
           addSystemMessage: collect,
           executeDesktopSlash: localCommands.executeLocal,
-          renderSlashHelp: () => {
-            const grouped = new Map<string, typeof slashCatalog.commands>();
-            for (const command of slashCatalog.commands) {
-              const rows = grouped.get(command.category) ?? [];
-              rows.push(command);
-              grouped.set(command.category, rows);
-            }
-            const sections = Array.from(grouped.entries()).map(
-              ([category, commands]) =>
-                `**${category}**\n${commands
-                  .map(
-                    (command) =>
-                      `\`/${command.name}\` — ${command.description}`,
-                  )
-                  .join("\n")}`,
-            );
-            return `**Available commands**\n\n${sections.join("\n\n")}`;
-          },
+          renderSlashHelp: () =>
+            renderLocalizedSlashHelp(slashCatalog.commands, t),
           openSettings: (section) => onOpenSettings?.(section),
           openDialog: () => undefined,
           startNewChat: () => onSessionStarted?.(),
@@ -355,8 +362,14 @@ export function useChatActions({
         });
 
         if (result.type === "error") {
-          if (showPending) replacePending(`error: ${result.message}`);
-          else addAgentMessage?.(`error: ${result.message}`);
+          const errorText = translateWithFallback(
+            t,
+            "chat.slash.errorPrefix",
+            `error: ${result.message}`,
+            { message: result.message },
+          );
+          if (showPending) replacePending(errorText);
+          else addAgentMessage?.(errorText);
         } else if (result.type === "handled") {
           const out = buffer || result.output;
           if (out) {
@@ -398,6 +411,7 @@ export function useChatActions({
       sendToAgent,
       setIsLoading,
       setMessages,
+      t,
     ],
   );
 

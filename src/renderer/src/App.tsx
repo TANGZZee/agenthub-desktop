@@ -32,6 +32,8 @@ function App(): React.JSX.Element {
   // which previously trapped restricted-network users in a reinstall
   // loop on every launch (#130).
   const [verifyWarning, setVerifyWarning] = useState(false);
+  // i18n key for the line shown on the splash screen; SplashScreen resolves it,
+  // so no translation function has to be captured across the async checks.
   const [splashStatus, setSplashStatus] = useState<string | undefined>(
     undefined,
   );
@@ -53,14 +55,14 @@ function App(): React.JSX.Element {
     let nextSetupProfile = "default";
 
     try {
-      setSplashStatus("Checking connection…");
+      setSplashStatus("splash.checkingConnection");
       const conn = await window.hermesAPI.getConnectionConfig();
       isRemote = conn.mode === "remote" || conn.mode === "ssh";
       setConnectionMode(conn.mode);
       setConnectionId(conn.connectionId);
 
       if (conn.mode === "ssh" && conn.ssh) {
-        setSplashStatus("Starting SSH tunnel…");
+        setSplashStatus("splash.startingSshTunnel");
         try {
           await window.hermesAPI.startSshTunnel();
         } catch (tunnelErr) {
@@ -68,7 +70,7 @@ function App(): React.JSX.Element {
         }
         next = "main";
       } else if (conn.mode === "remote" && conn.remoteUrl) {
-        setSplashStatus("Testing remote connection…");
+        setSplashStatus("splash.testingRemoteConnection");
         const ok = await window.hermesAPI.testRemoteConnection(conn.remoteUrl);
         if (ok) {
           next = "main";
@@ -77,7 +79,7 @@ function App(): React.JSX.Element {
           next = "main";
         }
       } else {
-        setSplashStatus("Checking local install…");
+        setSplashStatus("splash.checkingLocalInstall");
         const status = await window.hermesAPI.checkInstall();
         nextSetupProfile = status.activeProfile || "default";
         if (!status.installed) {
@@ -92,7 +94,7 @@ function App(): React.JSX.Element {
         // splash is still visible so the first render is snappy. Cap at 800ms
         // so it never pushes us past the 3s minimum.
         if (next === "main") {
-          setSplashStatus("Checking configuration…");
+          setSplashStatus("splash.checkingConfiguration");
           await Promise.race([
             Promise.all([
               window.hermesAPI

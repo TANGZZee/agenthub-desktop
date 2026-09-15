@@ -1,4 +1,4 @@
-import i18next, { type Resource } from "i18next";
+import i18next, { type i18n, type Resource } from "i18next";
 import {
   APP_LOCALES,
   DEFAULT_ACTIVE_LOCALE,
@@ -139,6 +139,8 @@ import memoryZh from "./locales/zh-CN/memory";
 import installZh from "./locales/zh-CN/install";
 import constantsZh from "./locales/zh-CN/constants";
 import kanbanZh from "./locales/zh-CN/kanban";
+import discoverZh from "./locales/zh-CN/discover";
+import diagnoseZh from "./locales/zh-CN/diagnose";
 import commonZhTw from "./locales/zh-TW/common";
 import navigationZhTw from "./locales/zh-TW/navigation";
 import welcomeZhTw from "./locales/zh-TW/welcome";
@@ -422,6 +424,8 @@ export const resources = {
       install: installZh,
       constants: constantsZh,
       kanban: kanbanZh,
+      discover: discoverZh,
+      diagnose: diagnoseZh,
     },
   },
   "zh-TW": {
@@ -590,7 +594,7 @@ function readKey(node: unknown, path: string): string | undefined {
 
 let locale: AppLocale = DEFAULT_ACTIVE_LOCALE;
 
-export const sharedI18n = i18next.createInstance();
+export const sharedI18n: i18n = i18next.createInstance();
 
 void sharedI18n.init({
   lng: locale,

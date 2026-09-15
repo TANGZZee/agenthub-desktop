@@ -7,6 +7,7 @@ import {
   type WorldAction,
 } from "./office3d/interactions/worldActions";
 import type { OfficeAgent } from "./office3d/core/types";
+import { useI18n } from "../../components/useI18n";
 
 interface OneChatModalProps {
   open: boolean;
@@ -50,6 +51,7 @@ export default function OneChatModal({
   agents,
   onWorldActions,
 }: OneChatModalProps): React.JSX.Element | null {
+  const { t } = useI18n();
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Record<string, ChatMessage[]>>({});
@@ -190,7 +192,9 @@ export default function OneChatModal({
         [selectedAgentId]: toChatMessages(items),
       }));
     } catch (err) {
-      const errorText = `Error: ${(err as Error).message}`;
+      const errorText = t("office.oneChat.errorPrefix", {
+        message: (err as Error).message,
+      });
       // The response may have been persisted even though the promise rejected.
       // Try to reload from the database before showing a raw error.
       try {
@@ -288,7 +292,9 @@ export default function OneChatModal({
               borderBottom: "1px solid rgba(255,255,255,0.06)",
             }}
           >
-            <span className="text-sm font-semibold text-white">Agents</span>
+            <span className="text-sm font-semibold text-white">
+              {t("office.oneChat.title")}
+            </span>
             <button
               type="button"
               onClick={onClose}
@@ -380,13 +386,13 @@ export default function OneChatModal({
                   <div className="text-xs text-white/40">
                     {selectedAgent.gatewayRunning
                       ? selectedAgent.status
-                      : "Offline — start gateway to chat"}
+                      : t("office.oneChat.offlineHint")}
                   </div>
                 </div>
               </>
             ) : (
               <span className="text-sm text-white/40">
-                Select an agent to chat
+                {t("office.oneChat.selectAgent")}
               </span>
             )}
           </div>
@@ -401,7 +407,7 @@ export default function OneChatModal({
               <div className="flex flex-col items-center justify-center h-full gap-3 text-white/30">
                 <Bot size={40} />
                 <span className="text-sm">
-                  Start a conversation with {selectedAgent.name}
+                  {t("office.oneChat.startWith", { name: selectedAgent.name })}
                 </span>
               </div>
             )}
@@ -499,10 +505,12 @@ export default function OneChatModal({
               }}
               placeholder={
                 !selectedAgent
-                  ? "Select an agent..."
+                  ? t("office.oneChat.inputPlaceholder")
                   : selectedAgent.gatewayRunning
-                    ? `Message ${selectedAgent.name}...`
-                    : "Gateway offline"
+                    ? t("office.oneChat.messagePlaceholder", {
+                        name: selectedAgent.name,
+                      })
+                    : t("office.oneChat.gatewayOffline")
               }
               disabled={
                 !selectedAgent ||

@@ -1,29 +1,38 @@
 export default {
   title: "看板",
-  subtitle: "持久化多代理任务面板，代理可自行领取并完成任务。",
+  subtitle: "持久化多智能体任务面板，智能体可自行领取并完成任务。",
 
   refresh: "刷新",
+  refreshTooltip: "从智能体重新加载看板和任务",
   dispatch: "派发",
-  dispatchTooltip: "执行一轮派发 — 将就绪任务升级并启动工作代理",
+  dispatchTooltip: "执行一轮派发 — 将就绪任务升级并启动工作智能体",
   newTask: "新建任务",
+  newTaskTooltip: "在当前看板上创建新任务",
   newBoard: "新建看板",
+  newBoardTooltip: "创建新看板",
+  showArchived: "显示已归档",
+  hideArchived: "隐藏已归档",
+  archivedTooltip: "切换归档列",
 
   remoteUnsupportedTitle: "看板需要本地安装 Hermes 或 SSH 隧道模式。",
   remoteUnsupportedHint:
-    "纯远程（HTTP + API Key）模式尚未开放看板 API。请在设置中切换到本地或 SSH 隧道模式来管理看板。",
+    "纯远程（HTTP + API 密钥）模式尚未开放看板 API。请在设置中切换到本地或 SSH 隧道模式来管理看板。",
 
   status: {
     triage: "分类",
     todo: "待办",
+    scheduled: "已排期",
     ready: "就绪",
     running: "执行中",
     blocked: "已阻塞",
+    review: "待审核",
     done: "完成",
+    archived: "已归档",
   },
 
   cardSpecify: "细化（展开规格 → 待办）",
   cardMarkDone: "标记完成",
-  cardReclaim: "回收工作代理",
+  cardReclaim: "回收工作智能体",
   cardUnblock: "解除阻塞",
   cardBlock: "阻塞",
   cardArchive: "归档",
@@ -33,7 +42,7 @@ export default {
   titlePlaceholder: "需要完成什么？",
   fieldBody: "内容（可选）",
   bodyPlaceholder: "上下文、验收条件、链接…",
-  fieldAssignee: "指派代理",
+  fieldAssignee: "指派智能体",
   assigneeNone: "— 分类（不指派）",
   fieldPriority: "优先级",
   priorityNormal: "普通 (0)",
@@ -54,7 +63,7 @@ export default {
   fieldSlug: "标识",
   slugPlaceholder: "kebab-case，例如 atm10-server",
   fieldDisplayName: "显示名称（可选）",
-  displayNamePlaceholder: "ATM10 Server",
+  displayNamePlaceholder: "ATM10 服务器",
   createBoard: "创建看板",
 
   detailFallbackTitle: "任务",
@@ -69,7 +78,7 @@ export default {
   confirmMarkDone: "将「{{title}}」标记为完成？",
   confirmArchive: "归档「{{title}}」？",
 
-  moveNotAllowed: "无法从桌面端将 {{from}} → {{to}}。请使用代理或 CLI。",
+  moveNotAllowed: "无法从桌面端将 {{from}} → {{to}}。请使用智能体或 CLI。",
   errLoadBoards: "加载看板失败",
   errLoadTasks: "加载任务失败",
   errMoveTask: "移动任务失败",
@@ -81,4 +90,8 @@ export default {
   errArchive: "归档任务失败",
   errReclaim: "回收失败",
   errDispatch: "派发失败",
+
+  hqBoardTooltip: "Claw3D 总部看板（只读镜像）",
+  dismissError: "关闭错误提示",
+  closeTaskDetails: "关闭任务详情",
 } as const;

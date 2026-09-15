@@ -76,6 +76,12 @@ describe("useModelConfig", () => {
           return vi.fn();
         }),
         setModelConfig: vi.fn(async () => true),
+        // The picker hides providers whose key env var is unset, so the mock
+        // reports every provider these tests use as configured.
+        getEnv: vi.fn(async () => ({
+          DEEPSEEK_API_KEY: "sk-test",
+          OPENAI_API_KEY: "sk-test",
+        })),
       },
     });
   });

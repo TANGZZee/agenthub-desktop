@@ -56,6 +56,17 @@ export default {
     "Hardware acceleration is turned off in Settings → Appearance, so the 3D office is using slow software rendering.",
   reenableGpu: "Re-enable GPU & restart",
   dismissNotice: "Dismiss",
+  // One-to-one chat modal opened from the Office screen
+  oneChat: {
+    title: "Agents",
+    offlineHint: "Offline — start gateway to chat",
+    selectAgent: "Select an agent to chat",
+    startWith: "Start a conversation with {{name}}",
+    inputPlaceholder: "Select an agent...",
+    messagePlaceholder: "Message {{name}}...",
+    gatewayOffline: "Gateway offline",
+    errorPrefix: "Error: {{message}}",
+  },
   // Enterable building interiors
   enter_office: "Enter Office",
   enter_bank: "Enter Bank",

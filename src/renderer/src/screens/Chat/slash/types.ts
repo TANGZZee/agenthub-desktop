@@ -52,6 +52,8 @@ export interface SlashCommandContext {
   selectedText?: string;
   attachments: Attachment[];
   isModelBusy: boolean;
+  /** Optional translator; omitted in unit tests so English fallbacks stay asserted. */
+  t?: (key: string, options?: Record<string, unknown>) => string;
 
   executeAgentSlash: (
     command: string,

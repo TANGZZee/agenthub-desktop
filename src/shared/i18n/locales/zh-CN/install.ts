@@ -1,5 +1,5 @@
 export default {
-  preparing: "准备中...",
+  preparing: "准备中…",
   startingInstall: "开始安装",
   installationComplete: "安装完成",
   installationFailed: "安装失败",
@@ -9,7 +9,7 @@ export default {
   copied: "已复制！",
   copyLogs: "复制日志",
   stepLabel: "步骤 {{step}}/{{total}}：{{title}}",
-  waitingToStart: "等待开始...",
+  waitingToStart: "等待开始…",
   continueToSetup: "继续前往设置",
   confirmTitle: "安装前确认",
   confirmLocationLabel: "Hermes 将安装到：",
@@ -19,6 +19,7 @@ export default {
     "此处存在一个文件夹，但不是有效的 Hermes 安装 — 安装将删除并替换它。",
   confirmNotInherited:
     "如果你在其他位置或通过命令行安装过 Hermes，那些安装不会被沿用。",
+  cancelInstallation: "取消安装",
   confirmInstallBtn: "安装 Hermes",
   useExistingBtn: "使用现有安装",
   useExistingHint:

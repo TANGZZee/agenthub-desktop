@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import startVid from "../../assets/startvid.mp4";
 import splashLogo from "../../assets/hermes-one.svg";
+import { useI18n } from "../../components/useI18n";
 
 interface SplashScreenProps {
   onFinished: () => void;
+  // i18n key for the progress line, resolved here so the startup checks in
+  // App.tsx never have to hold a translation function across async work.
   status?: string;
   // When provided, a "Switch to local mode" escape hatch appears after a delay
   // so a stuck remote/SSH connect (e.g. an unresponsive "Starting SSH tunnel…")
@@ -21,6 +24,7 @@ function SplashScreen({
   status,
   onSwitchToLocal,
 }: SplashScreenProps): React.JSX.Element {
+  const { t } = useI18n();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [showEscape, setShowEscape] = useState(false);
   // Stable boolean so the timer below isn't reset every time the parent
@@ -62,13 +66,13 @@ function SplashScreen({
       <img className="splash-logo" src={splashLogo} alt="Hermes One" />
       {onSwitchToLocal && showEscape && (
         <div className="splash-escape">
-          <span className="splash-escape-hint">Taking longer than usual?</span>
+          <span className="splash-escape-hint">{t("splash.takingLonger")}</span>
           <button type="button" onClick={onSwitchToLocal}>
-            Switch to local mode
+            {t("splash.switchToLocal")}
           </button>
         </div>
       )}
-      {status && <div className="splash-status">{status}</div>}
+      {status && <div className="splash-status">{t(status)}</div>}
     </div>
   );
 }

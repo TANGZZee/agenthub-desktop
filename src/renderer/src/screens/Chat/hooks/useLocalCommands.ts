@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useI18n } from "../../../components/useI18n";
 import { SLASH_COMMANDS } from "../slashCommands";
+import {
+  renderLocalizedSlashHelp,
+  translateWithFallback,
+} from "../slash/localizeSlashCommand";
 import type { UsageState } from "../types";
 
 interface UseLocalCommandsArgs {
@@ -61,14 +65,24 @@ export function useLocalCommands({
 
         case "/memory": {
           const mem = await window.hermesAPI.readMemory(profile);
-          const lines: string[] = ["**Agent Memory**\n"];
+          const lines: string[] = [
+            `**${translateWithFallback(t, "chat.slash.memoryTitle", "Agent Memory")}**\n`,
+          ];
           if (mem.memory.exists && mem.memory.content.trim()) {
             lines.push(mem.memory.content.trim());
           } else {
             lines.push(t("memory.noMemoryEntries"));
           }
           lines.push(
-            `\n**Stats:** ${mem.stats.totalSessions} sessions, ${mem.stats.totalMessages} messages`,
+            `\n**${translateWithFallback(
+              t,
+              "chat.slash.memoryStats",
+              `${mem.stats.totalSessions} sessions, ${mem.stats.totalMessages} messages`,
+              {
+                sessions: mem.stats.totalSessions,
+                messages: mem.stats.totalMessages,
+              },
+            )}**`,
           );
           addAgentMessage(lines.join("\n"));
           return true;
@@ -80,12 +94,20 @@ export function useLocalCommands({
             addAgentMessage(t("memory.noToolsetsFound"));
           } else {
             const rows = tools
-              .map(
-                (tool) =>
-                  `- **${tool.label}** — ${tool.description} ${tool.enabled ? "*(enabled)*" : "*(disabled)*"}`,
-              )
+              .map((tool) => {
+                const state = translateWithFallback(
+                  t,
+                  tool.enabled
+                    ? "chat.slash.toolEnabled"
+                    : "chat.slash.toolDisabled",
+                  tool.enabled ? "enabled" : "disabled",
+                );
+                return `- **${tool.label}** — ${tool.description} *(${state})*`;
+              })
               .join("\n");
-            addAgentMessage(`**Available Toolsets**\n\n${rows}`);
+            addAgentMessage(
+              `**${translateWithFallback(t, "chat.slash.toolsetsTitle", "Available Toolsets")}**\n\n${rows}`,
+            );
           }
           return true;
         }
@@ -93,12 +115,20 @@ export function useLocalCommands({
         case "/skills": {
           const skills = await window.hermesAPI.listInstalledSkills(profile);
           if (!skills.length) {
-            addAgentMessage("No skills installed.");
+            addAgentMessage(
+              translateWithFallback(
+                t,
+                "chat.slash.noSkills",
+                "No skills installed.",
+              ),
+            );
           } else {
             const rows = skills
               .map((s) => `- **${s.name}** (${s.category}) — ${s.description}`)
               .join("\n");
-            addAgentMessage(`**Installed Skills**\n\n${rows}`);
+            addAgentMessage(
+              `**${translateWithFallback(t, "chat.slash.skillsTitle", "Installed Skills")}**\n\n${rows}`,
+            );
           }
           return true;
         }
@@ -107,8 +137,8 @@ export function useLocalCommands({
           const soul = await window.hermesAPI.readSoul(profile);
           addAgentMessage(
             soul.trim()
-              ? `**Current Persona**\n\n${soul.trim()}`
-              : "_No persona configured._",
+              ? `**${translateWithFallback(t, "chat.slash.personaTitle", "Current Persona")}**\n\n${soul.trim()}`
+              : `_${translateWithFallback(t, "chat.slash.noPersona", "No persona configured.")}_`,
           );
           return true;
         }
@@ -118,8 +148,16 @@ export function useLocalCommands({
             window.hermesAPI.getHermesVersion(),
             window.hermesAPI.getAppVersion(),
           ]);
+          const hermes =
+            hermesVer ||
+            translateWithFallback(t, "chat.slash.unknownVersion", "unknown");
           addAgentMessage(
-            `**Hermes Agent:** ${hermesVer || "unknown"}\n**Hermes One:** v${appVer}`,
+            translateWithFallback(
+              t,
+              "chat.slash.versionSummary",
+              `Hermes Agent: ${hermes}\nHermes One: v${appVer}`,
+              { hermes, app: appVer },
+            ),
           );
           return true;
         }
@@ -139,12 +177,16 @@ export function useLocalCommands({
           const u = usageRef.current;
           if (u) {
             const lines = [
-              `**Token Usage**\n`,
-              `- **Prompt:** ${u.promptTokens.toLocaleString()} tokens`,
-              `- **Completion:** ${u.completionTokens.toLocaleString()} tokens`,
-              `- **Total:** ${u.totalTokens.toLocaleString()} tokens`,
+              `**${translateWithFallback(t, "chat.slash.usageTitle", "Token Usage")}**\n`,
+              `- ${translateWithFallback(t, "chat.slash.usagePrompt", `Prompt: ${u.promptTokens.toLocaleString()} tokens`, { count: u.promptTokens.toLocaleString() })}`,
+              `- ${translateWithFallback(t, "chat.slash.usageCompletion", `Completion: ${u.completionTokens.toLocaleString()} tokens`, { count: u.completionTokens.toLocaleString() })}`,
+              `- ${translateWithFallback(t, "chat.slash.usageTotal", `Total: ${u.totalTokens.toLocaleString()} tokens`, { count: u.totalTokens.toLocaleString() })}`,
             ];
-            if (u.cost != null) lines.push(`- **Cost:** $${u.cost.toFixed(4)}`);
+            if (u.cost != null) {
+              lines.push(
+                `- ${translateWithFallback(t, "chat.slash.usageCost", `Cost: $${u.cost.toFixed(4)}`, { amount: u.cost.toFixed(4) })}`,
+              );
+            }
             addAgentMessage(lines.join("\n"));
           } else {
             addAgentMessage(t("chat.noUsageData"));
@@ -153,26 +195,7 @@ export function useLocalCommands({
         }
 
         case "/help": {
-          const categoryLabels: Record<string, string> = {
-            chat: t("chat.categoryChat"),
-            agent: t("chat.categoryAgent"),
-            tools: t("chat.categoryTools"),
-            info: t("chat.categoryInfo"),
-          };
-          const grouped = new Map<string, typeof SLASH_COMMANDS>();
-          for (const c of SLASH_COMMANDS) {
-            const arr = grouped.get(c.category) ?? [];
-            arr.push(c);
-            grouped.set(c.category, arr);
-          }
-          let md = `**${t("chat.availableCommands")}**\n`;
-          for (const cat of ["chat", "agent", "tools", "info"] as const) {
-            const cmds = grouped.get(cat);
-            if (!cmds) continue;
-            md += `\n**${categoryLabels[cat]}**\n`;
-            for (const c of cmds) md += `\`${c.name}\` — ${c.description}\n`;
-          }
-          addAgentMessage(md);
+          addAgentMessage(renderLocalizedSlashHelp(SLASH_COMMANDS, t));
           return true;
         }
 

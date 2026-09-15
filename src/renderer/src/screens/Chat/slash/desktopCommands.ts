@@ -1,3 +1,4 @@
+import { translateWithFallback } from "./localizeSlashCommand";
 import type { ModelCommandFormatter, SlashCommandDefinition } from "./types";
 
 const formatExplainSelection: ModelCommandFormatter = async (input) => ({
@@ -72,7 +73,6 @@ export const DESKTOP_SLASH_COMMANDS: SlashCommandDefinition[] = [
       ["kanban", "Open Kanban board"],
       ["workers", "Open Workers page"],
       ["gateway", "Open Gateway status page"],
-
     ] as const
   ).map(
     ([name, description]): SlashCommandDefinition => ({
@@ -125,7 +125,12 @@ export const LOCAL_DESKTOP_SLASH_COMMANDS: SlashCommandDefinition[] =
         ? { type: "handled" as const }
         : {
             type: "error" as const,
-            message: `Desktop command /${input.name} is unavailable`,
+            message: translateWithFallback(
+              context.t,
+              "chat.slash.unavailable",
+              `Desktop command /${input.name} is unavailable`,
+              { name: input.name },
+            ),
           };
     },
   }));

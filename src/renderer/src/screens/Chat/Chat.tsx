@@ -1129,9 +1129,11 @@ function Chat({
                 type="button"
                 className={`btn-ghost chat-tool-btn ${webPreviewVisible ? "chat-tool-btn-active" : ""}`}
                 onClick={() => setWebPreviewVisible((v) => !v)}
-                title={
-                  webPreviewVisible ? "Hide web preview" : "Show web preview"
-                }
+                title={t(
+                  webPreviewVisible
+                    ? "chat.hideWebPreview"
+                    : "chat.showWebPreview",
+                )}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",

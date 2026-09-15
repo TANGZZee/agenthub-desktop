@@ -55,4 +55,31 @@ export default {
   copied: "Copied!",
   showMore: "Show more",
   showLess: "Show less",
+  // Always-visible chrome: the bottom status bar, the startup splash and the
+  // remote-mode notice. Grouped here because they share the `common` namespace.
+  status: {
+    ariaLabel: "Status",
+    gateway: "gateway",
+    offline: "offline",
+    modeLocal: "local",
+    modeRemote: "remote",
+    modeSsh: "SSH",
+    skillCount: "{{count}} skills",
+    commandsHint: "commands",
+    settingsHint: "settings",
+  },
+  splash: {
+    checkingConnection: "Checking connection…",
+    startingSshTunnel: "Starting SSH tunnel…",
+    testingRemoteConnection: "Testing remote connection…",
+    checkingLocalInstall: "Checking local install…",
+    checkingConfiguration: "Checking configuration…",
+    takingLonger: "Taking longer than usual?",
+    switchToLocal: "Switch to local mode",
+  },
+  remoteNotice: {
+    title: "Connected to remote Hermes",
+    description:
+      "{{feature}} is not available in remote mode. This data lives on the server and is not accessible through the API yet.",
+  },
 } as const;

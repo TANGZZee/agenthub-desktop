@@ -184,7 +184,10 @@ export const RemoteFolderPicker = memo(function RemoteFolderPicker({
           </button>
         </form>
 
-        <div className="folder-picker-breadcrumbs" aria-label="Breadcrumb">
+        <div
+          className="folder-picker-breadcrumbs"
+          aria-label={t("chat.folderPicker.breadcrumb")}
+        >
           {pathParts(currentPath).map((part, index) => (
             <button
               className="folder-picker-crumb"

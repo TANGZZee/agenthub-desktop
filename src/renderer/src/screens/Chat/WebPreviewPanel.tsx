@@ -433,7 +433,7 @@ export const WebPreviewPanel = memo(function WebPreviewPanel({
           isResizing ? "web-preview-resize-handle-active" : ""
         }`}
         onPointerDown={startResize}
-        title="Drag to resize"
+        title={t("chat.dragToResize")}
       />
       <div className="web-preview-header">
         <button
@@ -450,7 +450,7 @@ export const WebPreviewPanel = memo(function WebPreviewPanel({
           className="web-preview-btn"
           onClick={handleForward}
           disabled={!canGoForward}
-          title={t("common.forward") || "Forward"}
+          title={t("chat.webPreview.forward")}
         >
           <ArrowRight size={16} />
         </button>
@@ -458,7 +458,7 @@ export const WebPreviewPanel = memo(function WebPreviewPanel({
           type="button"
           className="web-preview-btn"
           onClick={handleReload}
-          title={t("common.reload") || "Reload"}
+          title={t("chat.webPreview.reload")}
         >
           <RotateCw size={16} className={isLoading ? "animate-spin" : ""} />
         </button>
@@ -472,7 +472,7 @@ export const WebPreviewPanel = memo(function WebPreviewPanel({
             className="web-preview-address-input"
             value={inputUrl}
             onChange={(e) => setInputUrl(e.target.value)}
-            placeholder="Search or enter web address..."
+            placeholder={t("chat.webPreview.addressPlaceholder")}
           />
         </form>
 
@@ -481,19 +481,25 @@ export const WebPreviewPanel = memo(function WebPreviewPanel({
             type="button"
             className={`web-preview-btn web-preview-annotate-btn ${isInspecting ? "web-preview-btn-active" : ""}`}
             onClick={toggleAnnotation}
-            title={isInspecting ? "Stop annotating" : "Annotate page"}
+            title={
+              isInspecting
+                ? t("chat.webPreview.stopAnnotating")
+                : t("chat.webPreview.annotate")
+            }
             aria-pressed={isInspecting}
           >
             <MousePointerClick size={16} />
             {isInspecting && (
-              <span className="web-preview-annotate-label">Annotating</span>
+              <span className="web-preview-annotate-label">
+                {t("chat.webPreview.annotating")}
+              </span>
             )}
           </button>
           <button
             type="button"
             className="web-preview-btn"
             onClick={handleOpenExternal}
-            title={t("worktree.open") || "Open in system browser"}
+            title={t("chat.webPreview.openInBrowser")}
           >
             <ExternalLink size={15} />
           </button>
@@ -501,7 +507,7 @@ export const WebPreviewPanel = memo(function WebPreviewPanel({
             type="button"
             className="web-preview-btn"
             onClick={onClose}
-            title={t("worktree.closeFile") || "Close"}
+            title={t("chat.worktree.closeFile")}
           >
             <X size={16} />
           </button>
@@ -564,16 +570,16 @@ export const WebPreviewPanel = memo(function WebPreviewPanel({
                 className="web-preview-annotation-input"
                 value={annotationComment}
                 onChange={(e) => setAnnotationComment(e.target.value)}
-                placeholder="Add a comment…"
-                aria-label="Annotation comment"
+                placeholder={t("chat.webPreview.commentPlaceholder")}
+                aria-label={t("chat.webPreview.commentLabel")}
                 maxLength={2_000}
               />
               <button
                 type="button"
                 className="web-preview-annotation-cancel"
                 onClick={cancelAnnotation}
-                title="Cancel annotation"
-                aria-label="Cancel annotation"
+                title={t("chat.webPreview.cancelAnnotation")}
+                aria-label={t("chat.webPreview.cancelAnnotation")}
               >
                 <X size={14} />
               </button>
@@ -581,8 +587,8 @@ export const WebPreviewPanel = memo(function WebPreviewPanel({
                 type="submit"
                 className="web-preview-annotation-submit"
                 disabled={!annotationComment.trim()}
-                title="Add annotation to chat"
-                aria-label="Add annotation to chat"
+                title={t("chat.webPreview.addAnnotation")}
+                aria-label={t("chat.webPreview.addAnnotation")}
               >
                 <ArrowUp size={15} />
               </button>

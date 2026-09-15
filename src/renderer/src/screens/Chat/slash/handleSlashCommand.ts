@@ -1,4 +1,5 @@
 import { executeAgentCommand } from "./executeAgentCommand";
+import { translateWithFallback } from "./localizeSlashCommand";
 import { parseSlashCommand } from "./parseSlashCommand";
 import { prepareModelSubmission } from "./prepareModelSubmission";
 import type {
@@ -25,7 +26,12 @@ export async function handleSlashCommand(
   if (!commandDef) {
     return {
       type: "error",
-      message: `Unknown command: /${parsed.command.name}`,
+      message: translateWithFallback(
+        context.t,
+        "chat.slash.unknownCommand",
+        `Unknown command: /${parsed.command.name}`,
+        { name: parsed.command.name },
+      ),
     };
   }
 
@@ -37,7 +43,12 @@ export async function handleSlashCommand(
   ) {
     return {
       type: "error",
-      message: `/${parsed.command.name} cannot run while the current turn is active`,
+      message: translateWithFallback(
+        context.t,
+        "chat.slash.busy",
+        `/${parsed.command.name} cannot run while the current turn is active`,
+        { name: parsed.command.name },
+      ),
     };
   }
 
@@ -57,7 +68,12 @@ export async function handleSlashCommand(
   ) {
     return {
       type: "error",
-      message: `/${parsed.command.name} does not accept attachments`,
+      message: translateWithFallback(
+        context.t,
+        "chat.slash.noAttachments",
+        `/${parsed.command.name} does not accept attachments`,
+        { name: parsed.command.name },
+      ),
     };
   }
 

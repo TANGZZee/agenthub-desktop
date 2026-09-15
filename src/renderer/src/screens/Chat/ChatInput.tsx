@@ -23,6 +23,12 @@ import {
   getVisibleSlashCommandRows,
   SLASH_COMMAND_VIEWPORT_HEIGHT,
 } from "./slash/virtualSlashCommands";
+import {
+  localizedSlashCategory,
+  localizedSlashDescription,
+  translateWithFallback,
+} from "./slash/localizeSlashCommand";
+
 import { useInputHistory } from "./hooks/useInputHistory";
 import { useVoiceInput } from "./hooks/useVoiceInput";
 import {
@@ -290,9 +296,10 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
         slashCommands.map((command) => ({
           command,
           normalizedName: command.name.toLowerCase(),
-          normalizedDescription: command.description.toLowerCase(),
+          normalizedDescription:
+            `${command.description} ${localizedSlashDescription(command, t)}`.toLowerCase(),
         })),
-      [slashCommands],
+      [slashCommands, t],
     );
 
     const filteredSlashCommands = useMemo(() => {
@@ -348,16 +355,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
     ]);
 
     function slashCategoryLabel(category: SlashCommand["category"]): string {
-      switch (category) {
-        case "chat":
-          return "Chat";
-        case "info":
-          return "Pages & settings";
-        case "tools":
-          return "Tools & skills";
-        case "agent":
-          return "Hermes Agent";
-      }
+      return localizedSlashCategory(category, t);
     }
 
     function clearAfterSend(text: string): void {
@@ -592,7 +590,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
                           {row.command.name?.replace(/^\//, "")}
                         </span>
                         <span className="slash-menu-item-desc">
-                          {row.command.description}
+                          {localizedSlashDescription(row.command, t)}
                         </span>
                         <span className="slash-menu-item-badge">
                           {slashCategoryLabel(row.command.category)}
@@ -604,16 +602,32 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
               </div>
               <div className="slash-menu-footer">
                 <span>
-                  <kbd>↑↓</kbd> navigate
+                  <kbd>↑↓</kbd>{" "}
+                  {translateWithFallback(
+                    t,
+                    "chat.slash.menuNavigate",
+                    "navigate",
+                  )}
                 </span>
                 <span>
-                  <kbd>↵</kbd> select
+                  <kbd>↵</kbd>{" "}
+                  {translateWithFallback(t, "chat.slash.menuSelect", "select")}
                 </span>
                 <span>
-                  <kbd>tab</kbd> complete
+                  <kbd>tab</kbd>{" "}
+                  {translateWithFallback(
+                    t,
+                    "chat.slash.menuComplete",
+                    "complete",
+                  )}
                 </span>
                 <span className="slash-menu-count">
-                  {filteredSlashCommands.length} commands
+                  {translateWithFallback(
+                    t,
+                    "chat.slash.menuCount",
+                    `${filteredSlashCommands.length} commands`,
+                    { count: filteredSlashCommands.length },
+                  )}
                 </span>
               </div>
             </div>
