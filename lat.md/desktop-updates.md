@@ -2,7 +2,7 @@
 
 Desktop updates use GitHub releases and expose both a startup upgrade action and a Settings auto-upgrade preference.
 
-The Electron main process configures `electron-updater` against the repository publisher metadata from `electron-builder.yml`, which points at `fathah/hermes-desktop`. [[src/main/app/updater.ts#setupUpdater]] registers update IPC handlers, persists the auto-upgrade preference under Electron `userData`, and applies that preference to `autoUpdater.autoDownload`.
+The Electron main process configures `electron-updater` against the repository publisher metadata from `electron-builder.yml`, which points at the fork's own repository (`TANGZZee/agenthub-desktop`) so an upstream release can never replace this build. [[src/main/app/updater.ts#setupUpdater]] registers update IPC handlers, persists the auto-upgrade preference under Electron `userData`, and applies that preference to `autoUpdater.autoDownload`.
 
 When GitHub reports a newer release, [[src/renderer/src/screens/Layout/Layout.tsx#Layout]] shows an upgrade button in the sidebar footer as soon as the app reaches the main layout. The button downloads the update when needed, shows download progress, and changes into a restart action after the update is ready.
 
@@ -53,3 +53,17 @@ Electron Builder explicitly unpacks `node_modules/better-sqlite3/prebuilds/*.nod
 Linux packages use the space-free `/opt/HermesOne` directory while macOS keeps the existing `Hermes One.app` bundle and executable name. RPM filenames retain the `.rpm` extension expected by release uploads.
 
 The global packaging product name supplies Electron Builder's Linux install-directory component. The explicit macOS `executableName` preserves its bundle path, and platform display labels retain Hermes One. The Linux sandbox hook targets the same directory. [[tests/packaging-identity.test.ts]] validates the configuration with the installed Electron Builder schema and evaluates its real application metadata and artifact macros.
+
+## Engine update and the venv lock
+
+The engine card updates the Python install in place, so the desktop has to release its own venv processes before the update can run at all.
+
+`hermes update` refuses to swap dependencies while another process runs from the install's venv, because on Windows those keep the native extensions (`.pyd`) locked. The desktop's own dashboards are exactly such processes, so [[src/main/ipc/register.ts]] stops them with `stopAllDashboards()` before the update; one is relaunched on demand afterwards. Without that step the in-app update could never succeed while the app was running, and surfaced only as `Update failed (exit code 2).`
+
+The updater runs non-interactively (`--yes`, required because the child's stdin is ignored) and parks local source edits in git stash (`--keep-stash`, the flag upstream documents for the desktop updater).
+
+## Engine update failure reporting
+
+A failed engine update keeps the CLI's own explanation instead of collapsing to an exit code.
+
+[[src/main/installer.ts#summarizeUpdateFailure]] trims the captured log to the refusal and the "how to fix it" lines that follow it, and [[src/renderer/src/components/settings/AboutPane.tsx#AboutPane]] renders that log beneath the error while the update runs and after it fails. [[tests/installer-update-failure.test.ts]] covers the extraction, ANSI stripping, and the empty-log fallback.

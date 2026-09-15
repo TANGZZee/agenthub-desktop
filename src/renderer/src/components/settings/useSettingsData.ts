@@ -49,6 +49,10 @@ export function useSettingsData(profile?: string) {
   const [updateResultType, setUpdateResultType] = useState<
     "success" | "error" | null
   >(null);
+  // Streamed output of the engine update. The CLI explains *why* it refused
+  // (e.g. another Hermes process still holds the venv), so keep the log and
+  // show it when the update fails instead of surfacing a bare exit code.
+  const [updateLog, setUpdateLog] = useState("");
   const [autoUpgradeEnabled, setAutoUpgradeEnabled] = useState(true);
   const [autoUpgradeSaved, setAutoUpgradeSaved] = useState(false);
 
@@ -862,7 +866,23 @@ export function useSettingsData(profile?: string) {
   async function handleUpdateHermes(): Promise<void> {
     setUpdating(true);
     setUpdateResult(null);
-    const result = await window.hermesAPI.runHermesUpdate();
+    setUpdateLog("");
+    // The main process streams the CLI's output while the update runs; without
+    // this the reason for a failure never reached the user.
+    const cleanup = window.hermesAPI.onInstallProgress((p) => {
+      setUpdateLog(p.log);
+    });
+    let result: { success: boolean; error?: string };
+    try {
+      result = await window.hermesAPI.runHermesUpdate();
+    } catch (err) {
+      cleanup();
+      setUpdating(false);
+      setUpdateResult((err as Error).message || t("settings.updateFailed"));
+      setUpdateResultType("error");
+      return;
+    }
+    cleanup();
     setUpdating(false);
     if (result.success) {
       setUpdateResult(t("settings.updateSuccess"));
@@ -907,6 +927,7 @@ export function useSettingsData(profile?: string) {
     updating,
     updateResult,
     updateResultType,
+    updateLog,
     autoUpgradeEnabled,
     autoUpgradeSaved,
     dumpOutput,

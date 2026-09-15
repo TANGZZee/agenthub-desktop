@@ -791,6 +791,36 @@ export async function runClawMigrate(
   });
 }
 
+// `hermes update` refuses to swap dependencies while other processes are
+// running from the install's venv — on Windows they hold the native
+// extensions (.pyd) open. It explains the refusal on its output, so exit codes
+// alone leave the user staring at "Update failed (exit code 2)." Pull the
+// meaningful lines out of the captured log so the reason reaches the UI.
+//
+// The CLI marks its refusal with ✗ and indents the "how to fix it" lines under
+// it, so everything from that marker on is exactly what the user needs.
+export function summarizeUpdateFailure(
+  log: string,
+  code: number | null,
+): string {
+  const exit = code === null ? "unknown" : String(code);
+  const lines = stripAnsi(log)
+    .split(/\r?\n/)
+    .map((line) => line.trimEnd())
+    .filter((line) => line.trim().length > 0);
+
+  const marker = lines.findIndex((line) => line.trim().startsWith("✗"));
+  const reason = lines
+    .slice(marker >= 0 ? marker : Math.max(0, lines.length - 8))
+    .slice(0, 14)
+    .join("\n")
+    .trim();
+
+  return reason
+    ? `Update failed (exit code ${exit}).\n\n${reason}`
+    : `Update failed (exit code ${exit}).`;
+}
+
 export async function runHermesUpdate(
   onProgress: (progress: InstallProgress) => void,
 ): Promise<void> {
@@ -813,18 +843,26 @@ export async function runHermesUpdate(
   emit("Running hermes update...\n");
 
   return new Promise((resolve, reject) => {
-    const proc = spawn(HERMES_PYTHON, hermesCliArgs(["update"]), {
-      cwd: HERMES_REPO,
-      env: {
-        ...process.env,
-        PATH: getEnhancedPath(),
-        HOME: homedir(),
-        HERMES_HOME,
-        TERM: "dumb",
+    // stdin is ignored, so an interactive prompt would break the run: `--yes`
+    // accepts the config-migration and stash-restore prompts. `--keep-stash`
+    // is the flag upstream documents for the desktop updater — local source
+    // edits are parked in git stash instead of riding along onto new code.
+    const proc = spawn(
+      HERMES_PYTHON,
+      hermesCliArgs(["update", "--yes", "--keep-stash"]),
+      {
+        cwd: HERMES_REPO,
+        env: {
+          ...process.env,
+          PATH: getEnhancedPath(),
+          HOME: homedir(),
+          HERMES_HOME,
+          TERM: "dumb",
+        },
+        stdio: ["ignore", "pipe", "pipe"],
+        ...HIDDEN_SUBPROCESS_OPTIONS,
       },
-      stdio: ["ignore", "pipe", "pipe"],
-      ...HIDDEN_SUBPROCESS_OPTIONS,
-    });
+    );
 
     proc.stdout?.on("data", (data: Buffer) => {
       emit(stripAnsi(data.toString()));
@@ -839,7 +877,7 @@ export async function runHermesUpdate(
         emit("\nUpdate complete!\n");
         resolve();
       } else {
-        reject(new Error(`Update failed (exit code ${code}).`));
+        reject(new Error(summarizeUpdateFailure(log, code)));
       }
     });
 

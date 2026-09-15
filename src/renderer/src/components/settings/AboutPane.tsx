@@ -37,6 +37,7 @@ export default function AboutPane(): React.JSX.Element {
     updating,
     updateResult,
     updateResultType,
+    updateLog,
     autoUpgradeEnabled,
     autoUpgradeSaved,
     dumpOutput,
@@ -204,6 +205,9 @@ export default function AboutPane(): React.JSX.Element {
             >
               {updateResult}
             </div>
+          )}
+          {(updating || updateResultType === "error") && updateLog.trim() && (
+            <pre className="settings-hermes-doctor">{updateLog.trim()}</pre>
           )}
           {doctorOutput && (
             <pre className="settings-hermes-doctor">{doctorOutput}</pre>

@@ -140,6 +140,7 @@ import {
   freshDashboardWebSocketUrl,
   getDashboardStatus,
   startDashboard,
+  stopAllDashboards,
   stopDashboard,
 } from "../dashboard";
 import {
@@ -875,6 +876,13 @@ export function registerIpcHandlers(context: IpcContext): void {
         clearAgentCapabilityEvidence(getActiveConnection().connectionId);
         return { success: true };
       }
+      // The desktop's own dashboards run from the install's venv, and on
+      // Windows they hold its native extensions (.pyd) open. `hermes update`
+      // refuses to swap dependencies underneath them, so updating from this
+      // screen could never succeed while the app was running — it just failed
+      // with a bare exit code. Stop what this app supervises first; a
+      // dashboard is relaunched on demand afterwards.
+      stopAllDashboards();
       await runHermesUpdate((progress: InstallProgress) => {
         event.sender.send("install-progress", progress);
       });
