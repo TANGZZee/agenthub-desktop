@@ -36,7 +36,9 @@ The adapter runs a fixed Node script through `ELECTRON_RUN_AS_NODE` and prints t
 
 ## Pi adapter
 
-Pi is detected from the local `pi.cmd`/`pi` installation, but it is registered only after the user connects it in the catalog. Its profile fixes `--offline`, `--no-session`, `--tools read,grep,find,ls`, and `-p`; the task prompt is appended by the main process as the final argument. See [[agenthub-workers#Readiness preflight]] for the credential gate.
+Pi is detected from the local `pi.cmd`/`pi` installation, but it is registered only after the user connects it in the catalog. Its profile fixes `--offline`, `--no-session`, `--tools read,grep,find,ls`, and `-p`.
+
+The task prompt is appended by the main process as the final argument. See [[agenthub-workers#Readiness preflight]] for the credential gate.
 
 ## Desktop visibility
 

@@ -66,6 +66,6 @@ Registry rows flip back to an Add button by removing the library row the pick cr
 
 ## Keyless providers stay visible
 
-The chat picker hides models whose provider has no usable credential, but a provider that authenticates outside `env` — the OAuth providers (Nous, openai-codex) and the local presets, all authored with an empty `envKey` — has nothing to look up and must not be treated as unconfigured.
+The chat picker hides models whose provider has no usable credential. A provider that authenticates outside `env` has no key to look up and must not be treated as unconfigured.
 
 [[src/renderer/src/screens/Chat/hooks/useModelConfig.ts#providerServesModel]] therefore returns `true` for an empty `envKey`, alongside its existing escapes for `custom`, the currently selected model, an unloaded env, and providers with no setup entry.

@@ -27,6 +27,7 @@ This directory defines the high-level concepts, business logic, and architecture
 - [[agent-sync]] — bidirectional sync of desktop profiles with the signed-in account's cloud agents (persona, memory, color, model/provider) via the backend's `/api/agents`; hash-based per-part conflict handling, no deletion propagation.
 - [[kanban]] — the JIRA-style multi-agent board tab; a thin client over the `hermes kanban` CLI with canonical status columns, an archived toggle, and focus/poll refresh.
 - [[agenthub-workers]] — controlled Worker tools, admission, redacted run records, and the M1 Echo closed loop.
+- [[agenthub-worker-tests]] — the AgentHub admission/runner/orchestrator test specs, each backed by a `@lat`-tagged test.
 
 - [[analytics]] — privacy-first, opt-out usage analytics that POST anonymous events to the in-house Hermes analytics service, keyed by a per-install localStorage UUID; replaces the former PostHog integration.
 - [[wallet-token-balances]] — profile-scoped Base mainnet wallets with encrypted recovery phrases, and on-chain ERC-20 token balance reads via ethers v6.
