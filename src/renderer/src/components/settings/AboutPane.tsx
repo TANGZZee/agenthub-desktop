@@ -27,6 +27,7 @@ import { useSettings } from "./SettingsDataContext";
 export default function AboutPane(): React.JSX.Element {
   const { t } = useI18n();
   const {
+    profile,
     hermesHome,
     hermesVersion,
     agentCapabilities,
@@ -63,7 +64,11 @@ export default function AboutPane(): React.JSX.Element {
 
   return (
     <div className="settings-modal-pane">
-      <ConfigHealth />
+      {/* The health report is per-profile: without the active profile this
+          pane audited the *default* profile's .env, so a user on a named
+          profile saw a false "no API_SERVER_KEY" warning for a key their
+          own profile already has. */}
+      <ConfigHealth profile={profile} />
 
       {/* ── Hermes Agent (engine) ─────────────────────────────── */}
       <section className="settings-card">

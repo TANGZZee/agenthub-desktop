@@ -242,3 +242,9 @@ Resetting to the main model persists `auto` routing without stale task-level cre
 ### YAML field boundaries
 
 Routing updates and credential removal address direct task children only, preserving nested options, comments, empty task maps, and CRLF line endings.
+
+## Config health is per-profile
+
+The config-health audit reads the profile's own `.env` and `config.yaml`, so every surface that runs it must say which profile to audit.
+
+[[src/renderer/src/screens/Settings/ConfigHealth.tsx#ConfigHealth]] takes an optional `profile`; omitting it audits the **default** profile. The About pane did exactly that, so a user whose active profile is `gj` (key present in `profiles/gj/.env`) still saw `EMPTY_API_SERVER_KEY` pointing at the untouched default `.env`. [[src/renderer/src/components/settings/AboutPane.tsx]] now forwards the active profile, and [[src/renderer/src/components/settings/AboutPane.test.tsx]] locks the forwarding.
