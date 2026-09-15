@@ -110,7 +110,7 @@
         "en": "Open-source terminal coding agent with pluggable model providers and an active community."
       },
       "docsUrl": "https://github.com/sst/opencode",
-      "installHint": "按 OpenCode 官方文档安装",
+      "installHint": "npm install -g opencode-ai",
       "binaries": {
         "win": ["opencode.cmd", "opencode.exe", "opencode"],
         "unix": ["opencode"]
@@ -182,6 +182,177 @@
       "docsUrl": "https://github.com/block/goose",
       "installHint": "按 Goose 官方文档安装 CLI",
       "binaries": { "win": ["goose.exe", "goose"], "unix": ["goose"] },
+      "permissions": ["no-write", "planned"]
+    },
+    {
+      "id": "crush",
+      "rank": 11,
+      "name": "Crush",
+      "vendor": "Charm",
+      "category": "open-source",
+      "role": { "zh": "开源终端智能体", "en": "Open-source terminal agent" },
+      "description": {
+        "zh": "Charm 出品的开源终端编码智能体，界面精致、可自由切换模型提供商；尚未审核其非交互运行与只读参数，暂不接入。",
+        "en": "Charm's open-source terminal coding agent with a polished UI and swappable model providers; its non-interactive and read-only behaviour is not reviewed yet, so it is not connectable."
+      },
+      "docsUrl": "https://github.com/charmbracelet/crush",
+      "installHint": "npm install -g @charmland/crush",
+      "binaries": {
+        "win": ["crush.cmd", "crush.exe", "crush"],
+        "unix": ["crush"]
+      },
+      "permissions": ["no-write", "planned"]
+    },
+    {
+      "id": "auggie",
+      "rank": 12,
+      "name": "Auggie CLI",
+      "vendor": "Augment Code",
+      "category": "vendor-cli",
+      "role": { "zh": "厂商编码智能体", "en": "Vendor coding agent" },
+      "description": {
+        "zh": "Augment Code 的命令行智能体，可复用它在大型代码库上的检索能力；等待只读参数验证后接入。",
+        "en": "Augment Code's command-line agent, reusing its retrieval on large codebases; waiting for read-only flag verification."
+      },
+      "docsUrl": "https://docs.augmentcode.com/",
+      "installHint": "npm install -g @augmentcode/auggie",
+      "binaries": {
+        "win": ["auggie.cmd", "auggie"],
+        "unix": ["auggie"]
+      },
+      "permissions": ["no-write", "planned"]
+    },
+    {
+      "id": "amp",
+      "rank": 13,
+      "name": "Amp",
+      "vendor": "Sourcegraph",
+      "category": "vendor-cli",
+      "role": { "zh": "厂商编码智能体", "en": "Vendor coding agent" },
+      "description": {
+        "zh": "Sourcegraph 的命令行编码智能体，自动更新较频繁；等待只读参数验证后接入。",
+        "en": "Sourcegraph's command-line coding agent, updated frequently; waiting for read-only flag verification."
+      },
+      "docsUrl": "https://ampcode.com/",
+      "installHint": "npm install -g @sourcegraph/amp",
+      "binaries": {
+        "win": ["amp.cmd", "amp.exe", "amp"],
+        "unix": ["amp"]
+      },
+      "permissions": ["no-write", "planned"]
+    },
+    {
+      "id": "droid",
+      "rank": 14,
+      "name": "Droid CLI",
+      "vendor": "Factory",
+      "category": "vendor-cli",
+      "role": { "zh": "厂商编码智能体", "en": "Vendor coding agent" },
+      "description": {
+        "zh": "Factory 官方的命令行编码智能体，npm 包名为 droid；等待只读参数验证后接入。",
+        "en": "Factory's official command-line coding agent, published on npm as droid; waiting for read-only flag verification."
+      },
+      "docsUrl": "https://docs.factory.ai/",
+      "installHint": "npm install -g droid",
+      "binaries": {
+        "win": ["droid.cmd", "droid.exe", "droid"],
+        "unix": ["droid"]
+      },
+      "permissions": ["no-write", "planned"]
+    },
+    {
+      "id": "kilocode",
+      "rank": 15,
+      "name": "Kilo Code CLI",
+      "vendor": "Kilo Code",
+      "category": "open-source",
+      "role": { "zh": "开源编码智能体", "en": "Open-source coding agent" },
+      "description": {
+        "zh": "Kilo Code 的命令行版本，装好后有 kilo 和 kilocode 两个命令名；等待只读参数验证后接入。",
+        "en": "The command-line build of Kilo Code, which installs both a kilo and a kilocode command; waiting for read-only flag verification."
+      },
+      "docsUrl": "https://docs.kilocode.ai/",
+      "installHint": "npm install -g @kilocode/cli",
+      "binaries": {
+        "win": ["kilo.cmd", "kilo", "kilocode.cmd", "kilocode"],
+        "unix": ["kilo", "kilocode"]
+      },
+      "permissions": ["no-write", "planned"]
+    },
+    {
+      "id": "roo-cli",
+      "rank": 16,
+      "name": "Roo Code CLI",
+      "vendor": "Roo Code",
+      "category": "open-source",
+      "role": { "zh": "开源编码智能体", "en": "Open-source coding agent" },
+      "description": {
+        "zh": "Roo Code 的命令行版本，来自成熟的开源 VS Code 智能体项目；等待只读参数验证后接入。",
+        "en": "The command-line build of Roo Code, a mature open-source VS Code agent; waiting for read-only flag verification."
+      },
+      "docsUrl": "https://github.com/RooCodeInc/Roo-Code",
+      "installHint": "npm install -g roo-cli",
+      "binaries": {
+        "win": ["roo.cmd", "roo"],
+        "unix": ["roo"]
+      },
+      "permissions": ["no-write", "planned"]
+    },
+    {
+      "id": "continue-cli",
+      "rank": 17,
+      "name": "Continue CLI",
+      "vendor": "Continue",
+      "category": "open-source",
+      "role": { "zh": "开源编码智能体", "en": "Open-source coding agent" },
+      "description": {
+        "zh": "开源编程助手 Continue 的命令行版本，装好后命令名是 cn；等待只读参数验证后接入。",
+        "en": "The command-line build of the open-source Continue assistant, installed as the cn command; waiting for read-only flag verification."
+      },
+      "docsUrl": "https://docs.continue.dev/",
+      "installHint": "npm install -g @continuedev/cli",
+      "binaries": {
+        "win": ["cn.cmd", "cn.exe", "cn"],
+        "unix": ["cn"]
+      },
+      "permissions": ["no-write", "planned"]
+    },
+    {
+      "id": "codebuddy-code",
+      "rank": 18,
+      "name": "CodeBuddy Code",
+      "vendor": "腾讯云",
+      "category": "china-ecosystem",
+      "role": { "zh": "厂商编码智能体", "en": "Vendor coding agent" },
+      "description": {
+        "zh": "腾讯云 CodeBuddy 的官方命令行智能体，除 npm 外还提供 Windows 原生安装脚本；等待只读参数验证后接入。",
+        "en": "Tencent Cloud's official CodeBuddy command-line agent, which also offers a native Windows installer; waiting for read-only flag verification."
+      },
+      "docsUrl": "https://www.codebuddy.cn/docs/cli/installation",
+      "installHint": "npm install -g @tencent-ai/codebuddy-code",
+      "binaries": {
+        "win": ["codebuddy.cmd", "codebuddy.exe", "codebuddy", "cbc.cmd", "cbc"],
+        "unix": ["codebuddy", "cbc"]
+      },
+      "permissions": ["no-write", "planned"]
+    },
+    {
+      "id": "trae-cli",
+      "rank": 19,
+      "name": "TraeCode CLI",
+      "vendor": "字节跳动",
+      "category": "china-ecosystem",
+      "role": { "zh": "厂商编码智能体", "en": "Vendor coding agent" },
+      "description": {
+        "zh": "字节跳动 Trae 官方的命令行智能体；官方说明仅 Trae 企业版旗舰套餐可用，且默认走 Max 模式，接入前需先确认套餐与只读写法。",
+        "en": "ByteDance's official Trae command-line agent; per its docs it is limited to Trae enterprise flagship plans and defaults to Max mode, so both the plan and a read-only invocation must be settled before integration."
+      },
+      "docsUrl": "https://docs.trae.cn/cli_get-started-with-trae-cli",
+      "installHint": "irm https://trae.cn/trae-cli/install.ps1 | iex",
+      "binaries": {
+        "win": ["traecli.cmd", "traecli.exe", "traecli", "trae-cli.cmd", "trae-cli"],
+        "unix": ["traecli", "trae-cli"]
+      },
       "permissions": ["no-write", "planned"]
     }
   ]

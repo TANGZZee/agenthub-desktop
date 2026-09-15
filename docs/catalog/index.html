@@ -717,6 +717,15 @@
             entry.name,
             entry.vendor,
             entry.id,
+            // The category chips are labels people will retype — searching
+            // "国产" or "official" must find that group, not just the literal id.
+            entry.category,
+            CATEGORY_LABELS[entry.category],
+            (entry.permissions || [])
+              .map(function (token) {
+                return PERMISSION_LABELS[token] || token;
+              })
+              .join(" "),
             entry.role && entry.role.zh,
             entry.role && entry.role.en,
             entry.description && entry.description.zh,

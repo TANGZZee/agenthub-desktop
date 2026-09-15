@@ -33,7 +33,7 @@ The registered Pi profile keeps the executable-owned arguments, read-only tool a
 
 ## Market catalog
 
-The catalog lists the ten ranked market CLIs after AgentHub's built-in runner, refuses to connect any candidate without a reviewed runner, and rejects unknown ids.
+The catalog lists the ranked market CLIs after AgentHub's built-in runner, refuses to connect any candidate without a reviewed runner, and rejects unknown ids.
 
 ## Readiness preflight
 

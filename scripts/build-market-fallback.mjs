@@ -44,6 +44,23 @@ if (!catalog || !Array.isArray(catalog.agents) || catalog.agents.length === 0) {
 
 // Emit fields in a fixed order so the output is stable across runs, and only
 // the fields the runtime parser understands.
+
+const PRINT_WIDTH = 80;
+
+// Emit a one-line array while it fits, and one item per line once it does not —
+// the same choice Prettier makes, so the generated file stays lint-clean.
+function renderArray(name, items, indent) {
+  const pad = " ".repeat(indent);
+  const inline = `${pad}${name}: [${items.map((item) => JSON.stringify(item)).join(", ")}],`;
+  if (inline.length <= PRINT_WIDTH) return [inline];
+  const inner = " ".repeat(indent + 2);
+  return [
+    `${pad}${name}: [`,
+    ...items.map((item) => `${inner}${JSON.stringify(item)},`),
+    `${pad}],`,
+  ];
+}
+
 function renderEntry(entry, indent) {
   const pad = " ".repeat(indent);
   const inner = " ".repeat(indent + 2);
@@ -66,17 +83,11 @@ function renderEntry(entry, indent) {
   lines.push(`${inner}docsUrl: ${JSON.stringify(entry.docsUrl)},`);
   lines.push(`${inner}installHint: ${JSON.stringify(entry.installHint)},`);
   lines.push(`${inner}binaries: {`);
-  lines.push(
-    `${inner}  win: [${entry.binaries.win.map((n) => JSON.stringify(n)).join(", ")}],`,
-  );
-  lines.push(
-    `${inner}  unix: [${entry.binaries.unix.map((n) => JSON.stringify(n)).join(", ")}],`,
-  );
+  lines.push(...renderArray("win", entry.binaries.win, indent + 4));
+  lines.push(...renderArray("unix", entry.binaries.unix, indent + 4));
   lines.push(`${inner}},`);
   const permissions = Array.isArray(entry.permissions) ? entry.permissions : [];
-  lines.push(
-    `${inner}permissions: [${permissions.map((p) => JSON.stringify(p)).join(", ")}],`,
-  );
+  lines.push(...renderArray("permissions", permissions, indent + 2));
   lines.push(`${pad}},`);
   return lines.join("\n");
 }
