@@ -960,7 +960,7 @@ function Workers(): React.JSX.Element {
   };
 
   const supportedTitle = txt("AgentHub 已支持", "Supported by AgentHub");
-  const marketTitle = txt("市面主流 CLI（前十）", "Top 10 market CLIs");
+  const marketTitle = txt("市面主流 CLI", "Market CLIs");
   const connectedTitle = txt("已接入且可运行", "Connected and runnable");
   const serviceTitle = txt("本机服务状态", "Local service status");
 

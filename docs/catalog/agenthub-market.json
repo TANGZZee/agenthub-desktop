@@ -354,6 +354,25 @@
         "unix": ["traecli", "trae-cli"]
       },
       "permissions": ["no-write", "planned"]
+    },
+    {
+      "id": "antigravity-cli",
+      "rank": 20,
+      "name": "Antigravity CLI",
+      "vendor": "Google",
+      "category": "official",
+      "role": { "zh": "终端智能体", "en": "Terminal agent" },
+      "description": {
+        "zh": "Google 官方的终端智能体，命令名是 agy；需要 Google 账号登录，会后台自动更新，免费档每周刷新额度。等待只读参数验证后接入。",
+        "en": "Google's official terminal agent, invoked as agy; it requires a Google sign-in, self-updates in the background, and its free tier refreshes weekly. Waiting for read-only flag verification."
+      },
+      "docsUrl": "https://antigravity.google/docs/cli/install",
+      "installHint": "irm https://antigravity.google/cli/install.ps1 | iex",
+      "binaries": {
+        "win": ["agy.exe", "agy"],
+        "unix": ["agy"]
+      },
+      "permissions": ["no-write", "planned"]
     }
   ]
 }
