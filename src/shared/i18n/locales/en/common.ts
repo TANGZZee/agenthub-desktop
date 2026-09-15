@@ -48,6 +48,7 @@ export default {
   downloading: "Downloading {{percent}}%",
   restartToUpdate: "Restart to update",
   updateFailed: "Update failed",
+  checkingForUpdates: "Checking for updates…",
   errorTitle: "Something went wrong",
   errorMessage: "An unexpected error occurred.",
   tryAgain: "Try Again",

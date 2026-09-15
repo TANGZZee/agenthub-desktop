@@ -89,7 +89,13 @@ rpm:
   # Same SUID fix for .rpm consumers (Fedora 40+ also restricts userns).
   afterInstall: build/linux-after-install.sh
 npmRebuild: false
+
+# Auto-update feed. This fork MUST NOT inherit upstream's release channel:
+# pointing at fathah/hermes-desktop would make the updater download vanilla
+# Hermes One and silently replace this build, wiping every AgentHub feature.
+# Our own releases feed the updater instead; until one is published the check
+# finds nothing, which the app treats as "no update" rather than an error.
 publish:
   provider: github
-  owner: fathah
-  repo: hermes-desktop
+  owner: TANGZZee
+  repo: agenthub-desktop

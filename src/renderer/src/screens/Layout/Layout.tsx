@@ -33,7 +33,6 @@ import Schedules from "../Schedules/Schedules";
 import Kanban from "../Kanban/Kanban";
 import Workers from "../Workers/Workers";
 
-
 import RemoteNotice from "../../components/RemoteNotice";
 import VerifyWarningBanner from "../../components/VerifyWarningBanner";
 import { useSettingsModal } from "../../components/settings/SettingsModalContext";
@@ -81,7 +80,6 @@ const PINNED_NAV_ITEMS: { view: View; icon: LucideIcon; labelKey: string }[] = [
   // longer a top-level nav item.
   { view: "schedules", icon: Timer, labelKey: "navigation.schedules" },
 ];
-
 
 const FOOTER_NAV_ITEMS: { view: View; icon: LucideIcon; labelKey: string }[] = [
   { view: "providers", icon: KeyRound, labelKey: "navigation.providers" },
@@ -363,7 +361,7 @@ function Layout({
 
   // Auto-update state
   const [updateState, setUpdateState] = useState<
-    "available" | "downloading" | "ready" | "error" | null
+    "checking" | "available" | "downloading" | "ready" | "error" | null
   >(null);
   const [updateVersion, setUpdateVersion] = useState<string | null>(null);
   const [updatePercent, setUpdatePercent] = useState<number | null>(null);
@@ -402,40 +400,67 @@ function Layout({
     };
   }, []);
 
+  // Re-run the update check and settle into whatever it reports. Used when a
+  // download had nothing to fetch — a failed or offline check leaves no cached
+  // release, and retrying the download then only re-raises the same error.
+  async function recheckForUpdate(): Promise<void> {
+    setUpdateState("checking");
+    setUpdateError(null);
+    try {
+      const version = await window.hermesAPI.checkForUpdates();
+      setUpdateVersion(version);
+      // No version means no reachable release (offline, or none published):
+      // hide the notice entirely instead of showing an error to dismiss.
+      setUpdateState(version ? "available" : null);
+    } catch {
+      setUpdateState(null);
+    }
+  }
+
   async function handleUpdate(): Promise<void> {
     if (updateState === "ready") {
       // The only user action: restart into the already-downloaded update.
       await window.hermesAPI.installUpdate();
-    } else if (updateState === "available" || updateState === "error") {
-      // Download the available update (or retry a failed auto-download).
-      // Set downloading state immediately to prevent re-entrancy.
-      setUpdateState("downloading");
-      setUpdatePercent(null);
-      setUpdateError(null);
-      try {
-        const ok = await window.hermesAPI.downloadUpdate();
-        if (!ok) setUpdateState("error");
-        // On success, we wait for the onUpdateDownloaded callback to set "ready"
-      } catch (err) {
-        setUpdateError(err instanceof Error ? err.message : String(err));
-        setUpdateState("error");
-      }
+      return;
+    }
+    if (updateState === "error") {
+      // A failed download has nothing cached; clicking retries the check.
+      await recheckForUpdate();
+      return;
+    }
+    if (updateState !== "available") return;
+
+    // Download the available update. Set the downloading state immediately to
+    // prevent re-entrancy.
+    setUpdateState("downloading");
+    setUpdatePercent(null);
+    setUpdateError(null);
+    try {
+      const ok = await window.hermesAPI.downloadUpdate();
+      // On success the onUpdateDownloaded callback moves us to "ready". A false
+      // result means there was nothing pending, so re-check rather than loop.
+      if (!ok) await recheckForUpdate();
+    } catch (err) {
+      setUpdateError(err instanceof Error ? err.message : String(err));
+      setUpdateState("error");
     }
   }
 
   const updateButtonTitle =
     updateError ??
-    (updateState === "available" && updateVersion
-      ? t("common.updateAvailable", { version: updateVersion })
-      : updateState === "downloading"
-        ? updatePercent === null
-          ? t("common.downloading", { percent: 0 })
-          : t("common.downloading", { percent: updatePercent })
-        : updateState === "ready"
-          ? t("common.restartToUpdate")
-          : updateState === "error"
-            ? t("common.updateFailed")
-            : undefined);
+    (updateState === "checking"
+      ? t("common.checkingForUpdates")
+      : updateState === "available" && updateVersion
+        ? t("common.updateAvailable", { version: updateVersion })
+        : updateState === "downloading"
+          ? updatePercent === null
+            ? t("common.downloading", { percent: 0 })
+            : t("common.downloading", { percent: updatePercent })
+          : updateState === "ready"
+            ? t("common.restartToUpdate")
+            : updateState === "error"
+              ? t("common.updateFailed")
+              : undefined);
 
   const handleNewChat = useCallback(() => {
     // Open a fresh run WITHOUT aborting others — any in-flight session keeps
@@ -797,7 +822,9 @@ function Layout({
                   updateState === "error" ? "error" : ""
                 }`}
                 onClick={handleUpdate}
-                disabled={updateState === "downloading"}
+                disabled={
+                  updateState === "downloading" || updateState === "checking"
+                }
                 title={updateButtonTitle}
                 aria-label={updateButtonTitle}
               >
@@ -1038,7 +1065,6 @@ function Layout({
           )}
 
           {visitedViews.has("gateway") && (
-
             <div style={paneStyle("gateway")}>
               {remoteMode ? (
                 <RemoteNotice feature="Gateway" />

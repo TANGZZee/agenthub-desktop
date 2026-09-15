@@ -9,6 +9,8 @@ interface UpdaterDeps {
 }
 
 let autoUpdaterInstance: AppUpdater | null = null;
+/** True once a check reported a release that can actually be downloaded. */
+let hasPendingUpdate = false;
 
 function updatePreferencesPath(): string {
   return join(app.getPath("userData"), "update-preferences.json");
@@ -37,6 +39,13 @@ function setAutoUpgradeEnabled(enabled: boolean): void {
 }
 
 export function setupUpdater({ getMainWindow }: UpdaterDeps): void {
+  /** Whether a network failure rather than a real update problem. */
+  function isOfflineError(message: string): boolean {
+    return /ERR_CONNECTION|ERR_NETWORK|ERR_INTERNET|ENOTFOUND|ETIMEDOUT|ECONNRESET|ERR_NAME_NOT_RESOLVED|net::/i.test(
+      message,
+    );
+  }
+
   ipcMain.handle("get-app-version", () => app.getVersion());
   ipcMain.handle("get-auto-upgrade-enabled", () => getAutoUpgradeEnabled());
   ipcMain.handle("set-auto-upgrade-enabled", (_event, enabled: boolean) => {
@@ -65,12 +74,20 @@ export function setupUpdater({ getMainWindow }: UpdaterDeps): void {
   autoUpdater.logger = updaterLogger;
   autoUpdater.autoDownload = getAutoUpgradeEnabled();
   autoUpdater.autoInstallOnAppQuit = true;
+  // Set while a check has produced a downloadable release. `downloadUpdate`
+  // throws "Please check update first" without it, and the UI used to retry a
+  // download on every error, looping that message forever (see updater.log).
+  hasPendingUpdate = false;
 
   autoUpdater.on("update-available", (info) => {
+    hasPendingUpdate = true;
     getMainWindow()?.webContents.send("update-available", {
       version: info.version,
       releaseNotes: info.releaseNotes,
     });
+  });
+  autoUpdater.on("update-not-available", () => {
+    hasPendingUpdate = false;
   });
   autoUpdater.on("download-progress", (progress) => {
     getMainWindow()?.webContents.send("update-download-progress", {
@@ -81,18 +98,43 @@ export function setupUpdater({ getMainWindow }: UpdaterDeps): void {
     getMainWindow()?.webContents.send("update-downloaded");
   });
   autoUpdater.on("error", (err) => {
+    hasPendingUpdate = false;
+    // A blocked or offline network is normal here (and expected on networks
+    // that cannot reach GitHub). It carries no update to offer, so it is logged
+    // instead of surfacing a banner the user can only dismiss.
+    if (isOfflineError(err.message)) {
+      updaterLogger.warn(`Update check unreachable: ${err.message}`);
+      return;
+    }
     getMainWindow()?.webContents.send("update-error", err.message);
   });
 
   ipcMain.handle("check-for-updates", async () => {
     try {
       const result = await autoUpdater.checkForUpdates();
-      return result?.updateInfo?.version || null;
-    } catch {
+      const version = result?.updateInfo?.version || null;
+      hasPendingUpdate = Boolean(
+        version && version !== app.getVersion() && result?.updateInfo,
+      );
+      return version;
+    } catch (err) {
+      hasPendingUpdate = false;
+      updaterLogger.warn(
+        `Update check failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
       return null;
     }
   });
   ipcMain.handle("download-update", async () => {
+    // Nothing to download (check failed, went offline, or already current):
+    // report it without raising an error, so the UI can re-check instead of
+    // retrying a download that can never succeed.
+    if (!hasPendingUpdate) {
+      updaterLogger.warn(
+        "Download requested with no pending update; re-check needed.",
+      );
+      return false;
+    }
     try {
       await autoUpdater.downloadUpdate();
       return true;
