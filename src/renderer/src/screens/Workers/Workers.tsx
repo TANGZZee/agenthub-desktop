@@ -27,6 +27,7 @@ import {
   type WorkerCatalogEntry,
   type WorkerCatalogResult,
   type WorkerPermissionToken,
+  type WorkerMarketStatus,
   type WorkerRunRecord,
   type WorkerRunStatus,
   type WorkerToolResponse,
@@ -129,6 +130,22 @@ function byRank(a: WorkerCatalogEntry, b: WorkerCatalogEntry): number {
   if (rankA !== rankB) return rankA - rankB;
   return a.name.localeCompare(b.name);
 }
+/**
+ * Human-readable name for where the market list came from, so the screen never
+ * implies a stale list is live: a fetched document, the last one kept on disk,
+ * or the table this build shipped with.
+ */
+function originLabel(origin: WorkerMarketStatus["origin"], en = false): string {
+  switch (origin) {
+    case "remote":
+      return en ? "fetched list" : "刚获取的清单";
+    case "cache":
+      return en ? "saved copy" : "上次保存的清单";
+    default:
+      return en ? "built-in list" : "内置清单";
+  }
+}
+
 /** Sentinel for "this agent names a model that Hermes does not have". */
 const CUSTOM_MODEL_CHOICE = "__custom__";
 
@@ -295,6 +312,13 @@ function Workers(): React.JSX.Element {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [modelOptions, setModelOptions] = useState<AgentHubModelOption[]>([]);
   const [modelBusyId, setModelBusyId] = useState<string | null>(null);
+  // Where the market candidate list came from (fetched / cached / shipped) and
+  // whether a fetch is running. The list itself is unreadable without knowing
+  // how fresh it is.
+  const [marketStatus, setMarketStatus] = useState<WorkerMarketStatus | null>(
+    null,
+  );
+  const [marketRefreshing, setMarketRefreshing] = useState(false);
   const inFlight = useRef(false);
 
   const error = pageError || pollError;
@@ -306,12 +330,14 @@ function Workers(): React.JSX.Element {
       inFlight.current = true;
       if (!silent) setRefreshing(true);
       try {
-        const [toolStatus, catalogResult, listed] = await Promise.all([
+        const [toolStatus, catalogResult, listed, market] = await Promise.all([
           window.hermesAPI.agenthubToolStatus(),
           window.hermesAPI.agenthubCatalogList(),
           window.hermesAPI.agenthubDispatch("worker.list", {}),
+          window.hermesAPI.agenthubMarketStatus(),
         ]);
         setStatus(toolStatus);
+        setMarketStatus(market ?? null);
         setCatalog(
           Array.isArray(catalogResult?.entries) ? catalogResult.entries : [],
         );
@@ -361,6 +387,47 @@ function Workers(): React.JSX.Element {
       window.clearInterval(id);
     };
   }, [refresh]);
+
+  /**
+   * Fetch a fresh market catalog. This is the only action that reaches the
+   * network on this screen, so it stays explicit and reports its outcome —
+   * a failed fetch keeps the previous list rather than emptying it.
+   */
+  const refreshMarket = async (): Promise<void> => {
+    setMarketRefreshing(true);
+    setNotice("");
+    try {
+      const result = await window.hermesAPI.agenthubMarketRefresh();
+      setMarketStatus(result ?? null);
+      if (Array.isArray(result?.catalog?.entries)) {
+        setCatalog(result.catalog.entries);
+      }
+      if (result?.error) {
+        setNotice(
+          txt(
+            `刷新清单失败（${result.error}），仍在用${originLabel(result.origin)}。`,
+            `Could not refresh the list (${result.error}); still using the ${originLabel(result.origin, true)}.`,
+          ),
+        );
+      } else {
+        setNotice(
+          txt(
+            `清单已更新，共 ${result?.count ?? 0} 个智能体。`,
+            `List updated — ${result?.count ?? 0} agents.`,
+          ),
+        );
+      }
+    } catch (err) {
+      setNotice(
+        txt(
+          `刷新清单失败：${err instanceof Error ? err.message : String(err)}`,
+          `Could not refresh the list: ${err instanceof Error ? err.message : String(err)}`,
+        ),
+      );
+    } finally {
+      setMarketRefreshing(false);
+    }
+  };
 
   const loadModels = useCallback(async (): Promise<void> => {
     try {
@@ -913,8 +980,48 @@ function Workers(): React.JSX.Element {
               "Every agent (Worker) this machine can use: the ones AgentHub supports can be connected and run right away, the market CLIs come with install instructions first.",
             )}
           </p>
+          {marketStatus ? (
+            <p className="workers-market-origin">
+              <Globe size={12} aria-hidden="true" />
+              <span>
+                {txt(
+                  `候选清单来自${originLabel(marketStatus.origin)}，共 ${marketStatus.count} 个`,
+                  `Candidate list: ${originLabel(marketStatus.origin, true)}, ${marketStatus.count} agents`,
+                )}
+                {marketStatus.fetchedAt
+                  ? txt(
+                      `（${formatTime(marketStatus.fetchedAt, locale)}）`,
+                      ` (${formatTime(marketStatus.fetchedAt, locale)})`,
+                    )
+                  : ""}
+              </span>
+              {marketStatus.error ? (
+                <span className="workers-market-origin-warn">
+                  {txt("上次刷新失败", "last refresh failed")}
+                </span>
+              ) : null}
+            </p>
+          ) : null}
         </div>
         <div className="schedules-header-actions">
+          <button
+            type="button"
+            className="workers-icon-btn"
+            onClick={() => void refreshMarket()}
+            disabled={marketRefreshing}
+            aria-busy={marketRefreshing}
+            aria-label={txt("刷新候选清单", "Refresh the candidate list")}
+            title={txt(
+              "从网络重新获取候选清单（不会安装任何东西）",
+              "Re-fetch the candidate list from the network (installs nothing)",
+            )}
+          >
+            {marketRefreshing ? (
+              <OrbLoader state="composing" size={14} />
+            ) : (
+              <Signal size={16} aria-hidden="true" />
+            )}
+          </button>
           <button
             type="button"
             className="workers-icon-btn"

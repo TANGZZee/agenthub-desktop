@@ -1,0 +1,1021 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AgentHub 智能体清单</title>
+    <meta
+      name="description"
+      content="市面上常见命令行智能体（CLI Agent）的清单：介绍、官方文档、安装命令。复制命令自行安装，装好后由 Hermes One 负责探测与接入。"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ── Design tokens ───────────────────────────────────────────────
+         Swiss/minimal, slate base, mono headings. Light and dark are both
+         first-class: every colour is a token, no ad-hoc hex in components. */
+      :root {
+        --font-sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont,
+          "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+        --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas,
+          "Courier New", monospace;
+
+        --space-1: 4px;
+        --space-2: 8px;
+        --space-3: 12px;
+        --space-4: 16px;
+        --space-5: 24px;
+        --space-6: 32px;
+        --space-7: 48px;
+        --space-8: 64px;
+
+        --radius-sm: 6px;
+        --radius-md: 10px;
+        --radius-lg: 14px;
+
+        --dur-fast: 140ms;
+        --dur-base: 200ms;
+        --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+        /* Light theme (default) */
+        --bg: #f6f7f9;
+        --surface: #ffffff;
+        --surface-2: #eef0f4;
+        --text: #0f172a;
+        --text-muted: #55617a;
+        --border: #d8dde6;
+        --border-strong: #b9c1ce;
+        --accent: #047857;
+        --accent-soft: #e3f4ed;
+        --warn: #92400e;
+        --warn-soft: #fdf3e3;
+        --warn-border: #e8cfa4;
+        --focus: #0f172a;
+        --shadow: 0 1px 2px rgba(15, 23, 42, 0.06),
+          0 8px 24px -12px rgba(15, 23, 42, 0.18);
+        --shadow-hover: 0 2px 4px rgba(15, 23, 42, 0.08),
+          0 16px 32px -16px rgba(15, 23, 42, 0.24);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #070b16;
+          --surface: #0e1223;
+          --surface-2: #161c2e;
+          --text: #f1f5f9;
+          --text-muted: #9aa8bd;
+          --border: #2a3346;
+          --border-strong: #3d4960;
+          --accent: #4ade80;
+          --accent-soft: #10241c;
+          --warn: #fbbf24;
+          --warn-soft: #241a08;
+          --warn-border: #4d3a12;
+          --focus: #f8fafc;
+          --shadow: 0 1px 2px rgba(0, 0, 0, 0.5),
+            0 8px 24px -12px rgba(0, 0, 0, 0.7);
+          --shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.55),
+            0 16px 32px -16px rgba(0, 0, 0, 0.8);
+        }
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font-sans);
+        font-size: 15px;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      :focus-visible {
+        outline: 2px solid var(--focus);
+        outline-offset: 2px;
+        border-radius: var(--radius-sm);
+      }
+
+      .wrap {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: var(--space-6) var(--space-4) var(--space-8);
+      }
+
+      /* ── Header ─────────────────────────────────────────────────── */
+      header.page-head {
+        margin-bottom: var(--space-5);
+      }
+
+      .page-title {
+        font-family: var(--font-mono);
+        font-size: clamp(22px, 4vw, 30px);
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        margin: 0 0 var(--space-2);
+      }
+
+      .page-sub {
+        color: var(--text-muted);
+        margin: 0;
+        max-width: 68ch;
+      }
+
+      /* ── Honest-status notice ───────────────────────────────────── */
+      .notice {
+        display: flex;
+        gap: var(--space-3);
+        align-items: flex-start;
+        background: var(--warn-soft);
+        border: 1px solid var(--warn-border);
+        border-radius: var(--radius-md);
+        padding: var(--space-3) var(--space-4);
+        margin: var(--space-5) 0;
+      }
+
+      .notice svg {
+        flex: none;
+        margin-top: 2px;
+        color: var(--warn);
+      }
+
+      .notice-body {
+        font-size: 14px;
+      }
+
+      .notice-title {
+        font-weight: 600;
+        color: var(--text);
+        display: block;
+        margin-bottom: var(--space-1);
+      }
+
+      .notice-body p {
+        margin: 0;
+        color: var(--text-muted);
+      }
+
+      .notice-body p + p {
+        margin-top: var(--space-2);
+      }
+
+      .notice strong {
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      /* ── Controls ───────────────────────────────────────────────── */
+      .controls {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3);
+        margin-bottom: var(--space-5);
+      }
+
+      .search-row {
+        display: flex;
+        gap: var(--space-2);
+        align-items: center;
+      }
+
+      .search-field {
+        position: relative;
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+
+      .search-field svg {
+        position: absolute;
+        left: var(--space-3);
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        pointer-events: none;
+      }
+
+      #search {
+        width: 100%;
+        font-family: inherit;
+        font-size: 15px;
+        color: var(--text);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 11px var(--space-3) 11px 40px;
+        transition: border-color var(--dur-fast) var(--ease),
+          box-shadow var(--dur-fast) var(--ease);
+      }
+
+      #search::placeholder {
+        color: var(--text-muted);
+      }
+
+      #search:hover {
+        border-color: var(--border-strong);
+      }
+
+      #search:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+        outline: none;
+      }
+
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2);
+      }
+
+      .chip {
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-muted);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 6px 14px;
+        cursor: pointer;
+        transition: background var(--dur-fast) var(--ease),
+          color var(--dur-fast) var(--ease),
+          border-color var(--dur-fast) var(--ease);
+      }
+
+      .chip:hover {
+        border-color: var(--border-strong);
+        color: var(--text);
+      }
+
+      .chip[aria-pressed="true"] {
+        background: var(--text);
+        border-color: var(--text);
+        color: var(--bg);
+      }
+
+      .result-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: var(--space-3);
+        flex-wrap: wrap;
+        color: var(--text-muted);
+        font-size: 13px;
+        margin-bottom: var(--space-3);
+      }
+
+      /* ── Cards ──────────────────────────────────────────────────── */
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+        gap: var(--space-4);
+      }
+
+      .card {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-4);
+        box-shadow: var(--shadow);
+        transition: box-shadow var(--dur-base) var(--ease),
+          border-color var(--dur-base) var(--ease),
+          transform var(--dur-base) var(--ease);
+      }
+
+      .card:hover {
+        box-shadow: var(--shadow-hover);
+        border-color: var(--border-strong);
+        transform: translateY(-2px);
+      }
+
+      .card-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: var(--space-3);
+      }
+
+      .card-title {
+        font-size: 17px;
+        font-weight: 600;
+        margin: 0;
+        letter-spacing: -0.01em;
+      }
+
+      .card-vendor {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin: 2px 0 0;
+      }
+
+      .badge {
+        flex: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1;
+        border-radius: 999px;
+        padding: 5px 10px;
+        white-space: nowrap;
+        border: 1px solid transparent;
+      }
+
+      .badge-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+
+      .badge-planned {
+        color: var(--warn);
+        background: var(--warn-soft);
+        border-color: var(--warn-border);
+      }
+
+      .card-desc {
+        margin: 0;
+        font-size: 14px;
+        color: var(--text-muted);
+      }
+
+      .card-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2);
+        font-size: 12px;
+      }
+
+      .tag {
+        color: var(--text-muted);
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 2px 8px;
+        font-family: var(--font-mono);
+        font-size: 11px;
+      }
+
+      .install {
+        margin-top: auto;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
+      }
+
+      .install-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .install-row {
+        display: flex;
+        align-items: stretch;
+        gap: var(--space-2);
+      }
+
+      .install-code {
+        flex: 1 1 auto;
+        min-width: 0;
+        font-family: var(--font-mono);
+        font-size: 12.5px;
+        line-height: 1.5;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 9px var(--space-3);
+        overflow-x: auto;
+        white-space: nowrap;
+        color: var(--text);
+      }
+
+      .btn {
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 500;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        padding: 8px 12px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+        transition: background var(--dur-fast) var(--ease),
+          border-color var(--dur-fast) var(--ease),
+          color var(--dur-fast) var(--ease);
+      }
+
+      .btn:hover {
+        border-color: var(--border-strong);
+        background: var(--surface-2);
+      }
+
+      .btn[data-copied="true"] {
+        color: var(--accent);
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+
+      .card-links {
+        display: flex;
+        gap: var(--space-4);
+        font-size: 13px;
+      }
+
+      .card-links a {
+        color: var(--accent);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-weight: 500;
+      }
+
+      .card-links a:hover {
+        text-decoration: underline;
+      }
+
+      /* ── Empty / error ──────────────────────────────────────────── */
+      .state {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: var(--space-8) var(--space-4);
+        border: 1px dashed var(--border);
+        border-radius: var(--radius-lg);
+        color: var(--text-muted);
+      }
+
+      .state h3 {
+        margin: 0 0 var(--space-2);
+        color: var(--text);
+        font-size: 16px;
+      }
+
+      .state p {
+        margin: 0 auto;
+        max-width: 46ch;
+        font-size: 14px;
+      }
+
+      .state code {
+        font-family: var(--font-mono);
+        font-size: 12.5px;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 1px 6px;
+      }
+
+      /* ── Footer ─────────────────────────────────────────────────── */
+      footer.page-foot {
+        margin-top: var(--space-7);
+        padding-top: var(--space-4);
+        border-top: 1px solid var(--border);
+        font-size: 13px;
+        color: var(--text-muted);
+      }
+
+      footer.page-foot p {
+        margin: 0 0 var(--space-2);
+      }
+
+      /* ── Responsive ─────────────────────────────────────────────── */
+      @media (max-width: 560px) {
+        .wrap {
+          padding: var(--space-5) var(--space-3) var(--space-7);
+        }
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        .install-row {
+          flex-direction: column;
+        }
+        .install-code {
+          white-space: normal;
+          word-break: break-word;
+        }
+        .btn {
+          justify-content: center;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+        .card:hover {
+          transform: none;
+        }
+      }
+
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+        border: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="page-head">
+        <h1 class="page-title">AgentHub 智能体清单</h1>
+        <p class="page-sub">
+          市面上常见的命令行智能体（CLI Agent）。挑一个，复制安装命令，在自己电脑上装好后，再由
+          Hermes One 负责探测与接入。
+        </p>
+      </header>
+
+      <!-- Honest status: this page cannot know what your machine can connect.
+           Saying so up front is the whole point — a catalog that implies
+           "install it and it just works" would be misleading. -->
+      <div class="notice" role="note">
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 8v4" />
+          <path d="M12 16h.01" />
+        </svg>
+        <div class="notice-body">
+          <span class="notice-title">本清单只负责「介绍 + 怎么装」</span>
+          <p>
+            这里的智能体都是<strong>独立程序</strong>，装在你自己电脑上，不在 Hermes One
+            里面。装好之后，能不能被 Hermes One 调度，取决于它是否已审核过那个 CLI
+            的只读参数——这件事<strong>只有你电脑上的 Hermes One 能判断</strong>，网页看不到。
+          </p>
+          <p>
+            目前 Hermes One 唯一已审核可接入的是内置的 <strong>Pi</strong>（不在本清单内）。
+            下面列出的都还没审核，因此都标注为「仅列出」。
+          </p>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="search-row">
+          <div class="search-field">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            <label class="visually-hidden" for="search">搜索智能体</label>
+            <input
+              id="search"
+              type="search"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="搜索名称、厂商或用途…"
+            />
+          </div>
+        </div>
+        <div class="chips" id="categories" role="group" aria-label="按分类筛选"></div>
+      </div>
+
+      <div class="result-bar">
+        <span id="count" role="status" aria-live="polite"></span>
+        <span id="updated"></span>
+      </div>
+
+      <div class="grid" id="grid"></div>
+
+      <footer class="page-foot">
+        <p>
+          数据来自本仓库的
+          <code>docs/catalog/agenthub-market.json</code>，应用内 Workers
+          页读的是同一份文件。
+        </p>
+        <p>
+          想加一个智能体？改那个 JSON 就行，不用重新打包。改完记得跑
+          <code>npm run catalog:check</code> 校验。
+        </p>
+      </footer>
+    </div>
+
+    <script>
+      (function () {
+        "use strict";
+
+        var CATEGORY_LABELS = {
+          official: "官方",
+          "open-source": "开源",
+          "vendor-cli": "厂商 CLI",
+          "china-ecosystem": "国产生态",
+        };
+
+        var PERMISSION_LABELS = {
+          read: "读取",
+          grep: "搜索内容",
+          find: "查找文件",
+          ls: "列目录",
+          "project-root": "限于项目目录",
+          "read-only-sandbox": "官方只读沙箱",
+          "no-write": "不写入",
+          planned: "尚未审核",
+        };
+
+        var state = {
+          catalog: null,
+          query: "",
+          category: "all",
+        };
+
+        var el = {
+          grid: document.getElementById("grid"),
+          count: document.getElementById("count"),
+          updated: document.getElementById("updated"),
+          search: document.getElementById("search"),
+          categories: document.getElementById("categories"),
+        };
+
+        function escapeHtml(value) {
+          return String(value).replace(/[&<>"']/g, function (c) {
+            return {
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            }[c];
+          });
+        }
+
+        function icon(paths, size) {
+          return (
+            '<svg width="' +
+            (size || 14) +
+            '" height="' +
+            (size || 14) +
+            '" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+            'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ' +
+            'aria-hidden="true">' +
+            paths +
+            "</svg>"
+          );
+        }
+
+        var ICON_COPY =
+          '<rect x="9" y="9" width="13" height="13" rx="2"/>' +
+          '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>';
+        var ICON_CHECK = '<path d="M20 6 9 17l-5-5"/>';
+        var ICON_EXTERNAL =
+          '<path d="M15 3h6v6"/><path d="M10 14 21 3"/>' +
+          '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>';
+
+        function matches(entry, query) {
+          if (!query) return true;
+          var haystack = [
+            entry.name,
+            entry.vendor,
+            entry.id,
+            entry.role && entry.role.zh,
+            entry.role && entry.role.en,
+            entry.description && entry.description.zh,
+            entry.description && entry.description.en,
+          ]
+            .join(" ")
+            .toLowerCase();
+          // Every whitespace-separated term must appear, so "open 开源" narrows.
+          return query
+            .split(/\s+/)
+            .filter(Boolean)
+            .every(function (term) {
+              return haystack.indexOf(term) !== -1;
+            });
+        }
+
+        function cardHtml(entry) {
+          var tags = (entry.permissions || [])
+            .map(function (token) {
+              var label = PERMISSION_LABELS[token] || token;
+              return '<span class="tag">' + escapeHtml(label) + "</span>";
+            })
+            .join("");
+
+          var category = CATEGORY_LABELS[entry.category] || entry.category;
+
+          return (
+            '<article class="card">' +
+            '<div class="card-head">' +
+            "<div>" +
+            '<h2 class="card-title">' +
+            escapeHtml(entry.name) +
+            "</h2>" +
+            '<p class="card-vendor">' +
+            escapeHtml(entry.vendor) +
+            (entry.role && entry.role.zh
+              ? " · " + escapeHtml(entry.role.zh)
+              : "") +
+            "</p>" +
+            "</div>" +
+            '<span class="badge badge-planned">' +
+            '<span class="badge-dot"></span>' +
+            "仅列出" +
+            "</span>" +
+            "</div>" +
+            '<p class="card-desc">' +
+            escapeHtml((entry.description && entry.description.zh) || "") +
+            "</p>" +
+            '<div class="card-meta">' +
+            '<span class="tag">' +
+            escapeHtml(category) +
+            "</span>" +
+            tags +
+            "</div>" +
+            '<div class="install">' +
+            '<span class="install-label">安装命令（复制后自行运行）</span>' +
+            '<div class="install-row">' +
+            '<code class="install-code">' +
+            escapeHtml(entry.installHint) +
+            "</code>" +
+            '<button type="button" class="btn" data-copy="' +
+            escapeHtml(entry.installHint) +
+            '" aria-label="复制 ' +
+            escapeHtml(entry.name) +
+            ' 的安装命令">' +
+            icon(ICON_COPY) +
+            "<span>复制</span>" +
+            "</button>" +
+            "</div>" +
+            '<div class="card-links">' +
+            '<a href="' +
+            escapeHtml(entry.docsUrl) +
+            '" target="_blank" rel="noopener noreferrer">' +
+            "官方文档" +
+            icon(ICON_EXTERNAL, 12) +
+            "</a>" +
+            "</div>" +
+            "</div>" +
+            "</article>"
+          );
+        }
+
+        function emptyHtml() {
+          var hasQuery = state.query || state.category !== "all";
+          if (!state.catalog) {
+            return (
+              '<div class="state">' +
+              "<h3>清单没能载入</h3>" +
+              "<p>如果你是用浏览器的「打开文件」直接打开的，浏览器会拦住它读取本地数据。" +
+              "请改用本地服务器预览，例如在本目录下运行 " +
+              "<code>python -m http.server</code>，再访问 " +
+              "<code>http://localhost:8000/</code>。在 GitHub Pages 上访问则一切正常。</p>" +
+              "</div>"
+            );
+          }
+          if (!hasQuery) {
+            return (
+              '<div class="state">' +
+              "<h3>清单是空的</h3>" +
+              "<p>数据文件里没有可显示的条目。</p>" +
+              "</div>"
+            );
+          }
+          return (
+            '<div class="state">' +
+            "<h3>没有匹配的智能体</h3>" +
+            "<p>换个关键词试试，比如 " +
+            '<code>opencode</code>、<code>开源</code>、<code>Google</code>，' +
+            "或点「全部分类」清掉筛选。</p>" +
+            "</div>"
+          );
+        }
+
+        function render() {
+          if (!state.catalog) {
+            el.grid.innerHTML = emptyHtml();
+            el.count.textContent = "";
+            return;
+          }
+
+          var entries = state.catalog.agents
+            .filter(function (entry) {
+              return (
+                state.category === "all" || entry.category === state.category
+              );
+            })
+            .filter(function (entry) {
+              return matches(entry, state.query);
+            })
+            .sort(function (a, b) {
+              return (
+                (a.rank || 999) - (b.rank || 999) || a.name.localeCompare(b.name)
+              );
+            });
+
+          var total = state.catalog.agents.length;
+          el.count.textContent =
+            entries.length === total
+              ? "共 " + total + " 个智能体"
+              : "显示 " + entries.length + " / " + total + " 个";
+
+          el.grid.innerHTML = entries.length
+            ? entries.map(cardHtml).join("")
+            : emptyHtml();
+        }
+
+        function legacyCopy(text) {
+          // Deprecated API, kept as a fallback for contexts where the async
+          // clipboard API rejects: older engines, a non-secure origin, or a
+          // document that is not focused.
+          try {
+            var area = document.createElement("textarea");
+            area.value = text;
+            area.setAttribute("readonly", "");
+            area.style.position = "fixed";
+            area.style.top = "-1000px";
+            area.style.opacity = "0";
+            document.body.appendChild(area);
+            area.select();
+            var ok = document.execCommand("copy");
+            document.body.removeChild(area);
+            return ok
+              ? Promise.resolve()
+              : Promise.reject(new Error("execCommand returned false"));
+          } catch (err) {
+            return Promise.reject(err);
+          }
+        }
+
+        function copyText(text) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text).catch(function () {
+              return legacyCopy(text);
+            });
+          }
+          return legacyCopy(text);
+        }
+
+        function setCopyButtonState(button, copied) {
+          var text = copied ? "已复制" : "复制";
+          button.dataset.copied = copied ? "true" : "false";
+          button.innerHTML =
+            icon(copied ? ICON_CHECK : ICON_COPY) + "<span>" + text + "</span>";
+        }
+
+        function flashCopied(button) {
+          setCopyButtonState(button, true);
+          window.setTimeout(function () {
+            setCopyButtonState(button, false);
+          }, 1600);
+        }
+
+        function flashCopyFailed(button) {
+          // Report the failure, then restore the resting label — otherwise the
+          // button stays stuck on an error with no way back.
+          var label = button.querySelector("span");
+          if (label) label.textContent = "复制失败";
+          window.setTimeout(function () {
+            setCopyButtonState(button, false);
+          }, 2400);
+        }
+
+        function buildCategoryChips() {
+          var counts = {};
+          state.catalog.agents.forEach(function (entry) {
+            counts[entry.category] = (counts[entry.category] || 0) + 1;
+          });
+
+          var order = ["all"].concat(
+            Object.keys(counts).sort(function (a, b) {
+              return counts[b] - counts[a];
+            }),
+          );
+
+          el.categories.innerHTML = order
+            .map(function (key) {
+              var label =
+                key === "all"
+                  ? "全部"
+                  : CATEGORY_LABELS[key] || key;
+              var count = key === "all" ? state.catalog.agents.length : counts[key];
+              return (
+                '<button type="button" class="chip" data-category="' +
+                escapeHtml(key) +
+                '" aria-pressed="' +
+                (key === "all" ? "true" : "false") +
+                '">' +
+                escapeHtml(label) +
+                " " +
+                count +
+                "</button>"
+              );
+            })
+            .join("");
+        }
+
+
+        document.addEventListener("click", function (event) {
+          var copyButton = event.target.closest("[data-copy]");
+          if (copyButton) {
+            var text = copyButton.getAttribute("data-copy");
+            copyText(text).then(
+              function () {
+                flashCopied(copyButton);
+              },
+              function () {
+                flashCopyFailed(copyButton);
+              },
+            );
+            return;
+          }
+
+          var chip = event.target.closest("[data-category]");
+          if (chip) {
+            state.category = chip.getAttribute("data-category");
+            Array.prototype.forEach.call(
+              el.categories.querySelectorAll("[data-category]"),
+              function (node) {
+                node.setAttribute(
+                  "aria-pressed",
+                  node === chip ? "true" : "false",
+                );
+              },
+            );
+            render();
+          }
+        });
+
+        var searchTimer = null;
+        el.search.addEventListener("input", function () {
+          var value = el.search.value.trim().toLowerCase();
+          window.clearTimeout(searchTimer);
+          searchTimer = window.setTimeout(function () {
+            state.query = value;
+            render();
+          }, 120);
+        });
+
+        fetch("./agenthub-market.json", { cache: "no-cache" })
+          .then(function (response) {
+            if (!response.ok) throw new Error("HTTP " + response.status);
+            return response.json();
+          })
+          .then(function (catalog) {
+            if (!catalog || !Array.isArray(catalog.agents)) {
+              throw new Error("清单结构不对");
+            }
+            state.catalog = catalog;
+            buildCategoryChips();
+            render();
+            el.updated.textContent = catalog.updatedAt
+              ? "更新于 " + catalog.updatedAt
+              : "";
+          })
+          .catch(function () {
+            state.catalog = null;
+            render();
+          });
+      })();
+    </script>
+  </body>
+</html>

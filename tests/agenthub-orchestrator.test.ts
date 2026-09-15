@@ -20,7 +20,7 @@ import {
   setAgentHubWorkerModel,
   type CatalogProbe,
 } from "../src/main/agenthub/catalog";
-import { WORKER_MARKET } from "../src/main/agenthub/market";
+import { MARKET_ENTRIES } from "../src/main/agenthub/market";
 import {
   echoWorkerCommand,
   resolveWindowsShimEntry,
@@ -293,8 +293,10 @@ describe("AgentHub catalog selection", () => {
 // @lat: [[agenthub-worker-tests#Market catalog]]
 describe("AgentHub market catalog", () => {
   it("lists the ten ranked market CLIs after the built-in runner", () => {
-    expect(WORKER_MARKET).toHaveLength(10);
-    expect(WORKER_MARKET.map((entry) => entry.rank)).toEqual([
+    // The shipped fallback table is generated from the reviewed catalog JSON, so
+    // this also guards that `npm run catalog:sync` was run.
+    expect(MARKET_ENTRIES).toHaveLength(10);
+    expect(MARKET_ENTRIES.map((entry) => entry.rank)).toEqual([
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
     ]);
     const entries = listAgentHubCatalog(

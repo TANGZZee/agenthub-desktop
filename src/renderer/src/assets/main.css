@@ -17812,6 +17812,23 @@ body:has(.shell-vibrant),
   min-width: 0;
 }
 
+/* Market catalog origin. Sits under the page subtitle so the list never looks
+   fresher than it is — fetched, cached, or the shipped fallback. */
+.workers-market-origin {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.workers-market-origin-warn {
+  color: var(--warning, #b45309);
+}
+
 /* ----- Banners (error / success) ----- */
 .workers-banner {
   display: flex;

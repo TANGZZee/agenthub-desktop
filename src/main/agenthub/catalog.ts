@@ -8,14 +8,18 @@ import {
   type WorkerCatalogEntry,
   type WorkerCatalogResult,
   type WorkerPermissionToken,
+  type WorkerRunnerStatus,
 } from "../../shared/agenthub";
 import { safeWriteFile } from "../utils";
 import {
   clearCliProbeCache,
   probeCliCommands,
   readCliVersionCached,
+  REVIEWED_MODEL_CAPABLE_RUNNER_IDS,
+  REVIEWED_RUNNER_IDS,
 } from "./profiles";
-import { WORKER_MARKET, type WorkerMarketEntry } from "./market";
+import type { MarketEntryDraft } from "../../shared/agenthub-market";
+import { getMarketCatalog } from "./market-source";
 import { resolveWindowsShimEntry } from "./runner";
 import { listModels } from "../models";
 
@@ -58,25 +62,36 @@ const PI_RUNNER_ENTRY = {
     "ls",
     "project-root",
   ] as WorkerPermissionToken[],
-  runner: "available",
-  supportsModelSelection: true,
 } as const;
 
 type CatalogSource =
-  | (WorkerMarketEntry & { builtIn?: false })
+  | (MarketEntryDraft & { builtIn?: false })
   | typeof PI_RUNNER_ENTRY;
 
-const CATALOG_SOURCES: readonly CatalogSource[] = [
-  PI_RUNNER_ENTRY,
-  ...WORKER_MARKET,
-];
+/**
+ * Sources for one listing: AgentHub's own reviewed runner first, then whatever
+ * the market catalog currently offers (a fetched document, else the on-disk
+ * cache, else the table this build shipped).
+ */
+function catalogSources(): readonly CatalogSource[] {
+  return [PI_RUNNER_ENTRY, ...getMarketCatalog().entries];
+}
 
-export const CATALOG_IDS: readonly string[] = CATALOG_SOURCES.map(
-  (source) => source.id,
-);
+/**
+ * Whether an agent may actually RUN is decided here, from the locally reviewed
+ * list, and never from catalog data. The remote document can add entries,
+ * reorder them, and describe them — but an id it invents has no reviewed runner,
+ * so it can advertise an agent without granting any ability to execute one.
+ */
+export function runnerStatusFor(id: string): WorkerRunnerStatus {
+  return REVIEWED_RUNNER_IDS.includes(id) ? "available" : "planned";
+}
 
 function isCatalogId(value: unknown): value is string {
-  return typeof value === "string" && CATALOG_IDS.includes(value);
+  return (
+    typeof value === "string" &&
+    catalogSources().some((source) => source.id === value)
+  );
 }
 
 function userDataPath(): string {
@@ -206,18 +221,18 @@ function isLaunchHealthy(executablePath: string): boolean {
 }
 
 function buildNote(
-  source: CatalogSource,
+  runner: WorkerRunnerStatus,
   detected: boolean,
   selected: boolean,
   launchHealthy: boolean,
 ): LocalizedText | undefined {
-  if (source.runner !== "available") {
+  if (runner !== "available") {
     return {
       zh: "安全 Runner 尚未实现：可以先按说明安装，等只读参数在本机复验后再开放接入。",
       en: "A safe runner is not implemented yet: install it from the instructions, and connecting opens once its read-only flags are verified on this machine.",
     };
   }
-  if (source.runner === "available" && detected && !launchHealthy) {
+  if (detected && !launchHealthy) {
     return {
       zh: "本机 CLI 已探测到，但它指向的目标文件不存在，安装可能已损坏，请重新安装后再接入。",
       en: "The local CLI was detected but the target it points at is missing, so the install looks damaged — reinstall it before connecting.",
@@ -266,8 +281,9 @@ function buildEntry(
   const launchHealthy = executablePath
     ? isLaunchHealthy(executablePath)
     : false;
-  const installable =
-    source.runner === "available" && detected && launchHealthy;
+  // Derived locally, never taken from the (untrusted) catalog entry.
+  const runner = runnerStatusFor(source.id);
+  const installable = runner === "available" && detected && launchHealthy;
   return {
     id: source.id,
     name: source.name,
@@ -285,11 +301,14 @@ function buildEntry(
     version,
     permissions: [...source.permissions],
     installable,
-    runner: source.runner,
+    runner,
     builtIn: source.rank === null,
     model,
-    supportsModelSelection: source.supportsModelSelection === true,
-    note: buildNote(source, detected, selected, launchHealthy),
+    // Also local: a catalog entry cannot claim to accept a model argument.
+    supportsModelSelection: REVIEWED_MODEL_CAPABLE_RUNNER_IDS.includes(
+      source.id,
+    ),
+    note: buildNote(runner, detected, selected, launchHealthy),
   };
 }
 
@@ -298,21 +317,24 @@ export function listAgentHubCatalog(
   probe: CatalogProbe = DEFAULT_CATALOG_PROBE,
 ): WorkerCatalogResult {
   const selected = new Set(store.selectedIds());
-  const names = CATALOG_SOURCES.flatMap((source) =>
+  const sources = catalogSources();
+  const names = sources.flatMap((source) =>
     process.platform === "win32"
       ? [...source.binaries.win]
       : [...source.binaries.unix],
   );
   const found = probe.resolve(names);
-  const entries = CATALOG_SOURCES.map((source) =>
-    buildEntry(
-      source,
-      selected.has(source.id),
-      probe,
-      found,
-      store.modelFor(source.id),
-    ),
-  ).sort((a, b) => (a.rank ?? -1) - (b.rank ?? -1));
+  const entries = sources
+    .map((source) =>
+      buildEntry(
+        source,
+        selected.has(source.id),
+        probe,
+        found,
+        store.modelFor(source.id),
+      ),
+    )
+    .sort((a, b) => (a.rank ?? -1) - (b.rank ?? -1));
   return { entries };
 }
 

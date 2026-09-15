@@ -25,3 +25,10 @@ export {
   setAgentHubWorkerModel,
 } from "./catalog";
 export type { AgentHubModelOption } from "./catalog";
+export {
+  getMarketCatalog,
+  refreshMarketCatalog,
+  resetMarketCatalogCache,
+  marketCatalogUrl,
+} from "./market-source";
+export type { MarketCatalogState, MarketOrigin } from "./market-source";

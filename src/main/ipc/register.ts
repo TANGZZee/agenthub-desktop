@@ -450,6 +450,8 @@ import {
   removeAgentHubSelection,
   setAgentHubWorkerModel,
   resetDefaultOrchestrator,
+  getMarketCatalog,
+  refreshMarketCatalog,
 } from "../agenthub";
 
 export interface IpcContext {
@@ -3612,4 +3614,16 @@ export function registerIpcHandlers(context: IpcContext): void {
       return result;
     },
   );
+  // Market catalog: read the current state, or fetch a fresh document.
+  ipcMain.handle("agenthub-market-status", () => {
+    const { entries, ...rest } = getMarketCatalog();
+    return { ...rest, count: entries.length };
+  });
+  ipcMain.handle("agenthub-market-refresh", async () => {
+    const state = await refreshMarketCatalog();
+    const result = listAgentHubCatalog();
+    getMainWindow()?.webContents.send("agenthub-worker-changed");
+    const { entries, ...rest } = state;
+    return { ...rest, count: entries.length, catalog: result };
+  });
 }

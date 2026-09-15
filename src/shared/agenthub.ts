@@ -142,6 +142,29 @@ export interface WorkerCatalogResult {
 }
 
 /**
+ * Where the market candidate list came from. The app prefers a freshly fetched
+ * document, then the last good one cached on disk, and falls back to the table
+ * it shipped with — so the UI can say which one the user is looking at.
+ */
+export type WorkerMarketOrigin = "remote" | "cache" | "built-in";
+
+export interface WorkerMarketStatus {
+  origin: WorkerMarketOrigin;
+  /** Epoch ms of the last successful fetch; null for cache/built-in. */
+  fetchedAt: number | null;
+  /** Entries the document carried but validation dropped. */
+  rejected: number;
+  /** Last refresh failure, so a stale list can explain itself. */
+  error: string | null;
+  /** How many candidates the current list holds. */
+  count: number;
+}
+
+export interface WorkerMarketRefreshResult extends WorkerMarketStatus {
+  /** The re-listed catalog, so the caller does not need a second round-trip. */
+  catalog: WorkerCatalogResult;
+}
+/**
  * One model already configured in Hermes, offered to connected agents. AgentHub
  * never invents a provider, key, or endpoint: it only picks a model the user
  * already set up in Hermes, or a model named explicitly for one agent.

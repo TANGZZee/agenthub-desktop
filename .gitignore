@@ -45,3 +45,6 @@ release/
 # Local scratch (tests, caches, dumps)
 Temp/
 
+
+# Plan-mode artifacts from the local agent harness
+.pi/

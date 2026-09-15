@@ -48,6 +48,8 @@ import type {
   WorkerToolStatus,
   WorkerCatalogResult,
   AgentHubModelOption,
+  WorkerMarketStatus,
+  WorkerMarketRefreshResult,
 } from "../shared/agenthub";
 
 interface ElectronAPI {
@@ -1392,6 +1394,8 @@ interface HermesAPI {
     id: string,
     model: string | null,
   ) => Promise<WorkerCatalogResult>;
+  agenthubMarketStatus: () => Promise<WorkerMarketStatus>;
+  agenthubMarketRefresh: () => Promise<WorkerMarketRefreshResult>;
   onAgenthubWorkerChanged: (callback: () => void) => () => void;
 }
 

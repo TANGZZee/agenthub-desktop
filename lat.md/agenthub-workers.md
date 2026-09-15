@@ -48,11 +48,21 @@ The local gateway receives `AGENTHUB_WORKER_URL` and `AGENTHUB_WORKER_TOKEN` so 
 
 ## Catalog & installation
 
-The Workers page lists AgentHub's reviewed runner first, then the ten most widely used coding-agent CLIs by market rank.
+The Workers page lists AgentHub's reviewed runner first, then the market candidates by rank.
 
 Nothing is registered automatically: a candidate becomes runnable only after the user connects it, and connecting requires both a detected local executable and a reviewed runner. Choices live `agenthub-catalog.v1.json` under the desktop's userData directory, so detection never implies consent. Hermes cannot change this list through any `worker.*` tool.
 
 Detection alone is not enough: a detected CLI whose Windows shim points at a missing target is reported as a damaged install and stays unconnectable, because such an agent would fail on every run. See [[agenthub-workers#CLI launch on Windows]].
+
+## Market catalog source
+
+The candidate list is fetched from a published JSON document, so it can grow without shipping a desktop build; the app falls back to a cached copy and then to the table it shipped with.
+
+`docs/catalog/agenthub-market.json` is the single source for both the `docs/catalog/index.html` web page and the app. It is validated twice, with different jobs: `scripts/validate-market-catalog.mjs` is the authoring gate that catches typos before a commit, while [[src/shared/agenthub-market.ts#parseMarketCatalog]] defends the runtime against a tampered response or a corrupt cache — it drops rather than coerces, requires `https:` links, bounds every field, and collapses `installHint` to one line because that value is copied into a terminal.
+
+Three sources, tried in order: a fetched document, the last good one cached under userData, then the generated fallback [[src/main/agenthub/market.generated.ts]]. A failed refresh keeps the previous list and records why, so the Workers page can show which list is on screen. [[src/main/agenthub/market-source.ts]] is what callers read.
+
+**A catalog entry can never grant runnability.** The remote document may add entries, reorder them, and describe them, but `runner` and `supportsModelSelection` are derived locally from [[src/main/agenthub/profiles.ts#REVIEWED_RUNNER_IDS]], and the authoring validator rejects a document that carries a `runner` field at all. An invented id is therefore always "listed only".
 
 ## Readiness preflight
 

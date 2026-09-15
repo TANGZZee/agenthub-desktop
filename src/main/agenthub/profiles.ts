@@ -10,6 +10,24 @@ import { echoWorkerCommand } from "./runner";
 const WINDOWS_SHIM = /\.(cmd|bat)$/i;
 const EXECUTABLE_SUFFIX = /\.(cmd|exe|bat|ps1)$/i;
 
+/**
+ * The only agents this build can actually RUN.
+ *
+ * A catalog entry describes an agent; it can never make one runnable. Whether a
+ * CLI may be dispatched is decided here, against a runner whose read-only
+ * argument set was reviewed and verified on a real machine — currently just Pi.
+ *
+ * Everything else in the catalog stays "listed only", however the catalog
+ * describes it.
+ */
+export const REVIEWED_RUNNER_IDS: readonly string[] = ["pi"];
+
+/**
+ * Reviewed runners that accept a model argument, so the UI can offer the model
+ * picker for them. Also local: a catalog entry cannot claim this capability.
+ */
+export const REVIEWED_MODEL_CAPABLE_RUNNER_IDS: readonly string[] = ["pi"];
+
 /** Providers Pi can authenticate against, checked by the readiness probe. */
 export const PI_CREDENTIAL_PROVIDERS = [
   "google",

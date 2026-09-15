@@ -46,6 +46,8 @@ import type {
   WorkerToolStatus,
   WorkerCatalogResult,
   AgentHubModelOption,
+  WorkerMarketStatus,
+  WorkerMarketRefreshResult,
 } from "../shared/agenthub";
 
 /**
@@ -1860,6 +1862,10 @@ const hermesAPI = {
     model: string | null,
   ): Promise<WorkerCatalogResult> =>
     ipcRenderer.invoke("agenthub-catalog-set-model", id, model),
+  agenthubMarketStatus: (): Promise<WorkerMarketStatus> =>
+    ipcRenderer.invoke("agenthub-market-status"),
+  agenthubMarketRefresh: (): Promise<WorkerMarketRefreshResult> =>
+    ipcRenderer.invoke("agenthub-market-refresh"),
   onAgenthubWorkerChanged: (callback: () => void): (() => void) => {
     const handler = (): void => callback();
     ipcRenderer.on("agenthub-worker-changed", handler);
