@@ -33,9 +33,11 @@ nsis:
   # Restore user-facing installer / shortcut name now that productName is
   # space-free.
   shortcutName: Hermes One
-  uninstallDisplayName: Hermes One
-  createDesktopShortcut: always
-  oneClick: true
+  # Assisted installer so the user can pick the drive (e.g. E:\HermesOne).
+  # oneClick was the upstream default; this fork installs on machines where
+  # C: space matters, so the directory page is enabled deliberately.
+  oneClick: false
+  allowToChangeInstallationDirectory: true
   perMachine: false
 mac:
   # Keep the existing bundle/executable name used by updates and release checks.
