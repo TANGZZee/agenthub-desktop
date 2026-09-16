@@ -52,7 +52,12 @@ export function StatusBar({
     }
     void load();
     // Gateway state + skill count change while the app is open; poll gently.
-    const id = window.setInterval(() => void load(), 4000);
+    // Skipped entirely while the window is hidden or minimised — nobody can
+    // read the status bar then, and the round trip only wakes the renderer.
+    const id = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      void load();
+    }, 4000);
     return () => {
       cancelled = true;
       window.clearInterval(id);

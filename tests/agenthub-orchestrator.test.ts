@@ -33,8 +33,8 @@ const TEST_CWD = join(process.cwd(), "Temp", "tests", "agenthub-worker");
 
 /** Deterministic probe: pretend no coding-agent CLI is installed here. */
 const NO_CLI_PROBE: CatalogProbe = {
-  resolve: () => new Map<string, string>(),
-  version: () => null,
+  resolve: async () => new Map<string, string>(),
+  version: async () => null,
 };
 
 function echoProfile(overrides: Partial<WorkerProfile> = {}): WorkerProfile {
@@ -292,7 +292,7 @@ describe("AgentHub catalog selection", () => {
 
 // @lat: [[agenthub-worker-tests#Market catalog]]
 describe("AgentHub market catalog", () => {
-  it("lists the ranked market CLIs after the built-in runner", () => {
+  it("lists the ranked market CLIs after the built-in runner", async () => {
     // The shipped fallback table is generated from the reviewed catalog JSON, so
     // this also guards that `npm run catalog:sync` was run. Comparing against the
     // table's own length keeps the check meaningful however the catalog grows.
@@ -301,37 +301,39 @@ describe("AgentHub market catalog", () => {
     expect(ranks).toEqual(
       Array.from({ length: MARKET_ENTRIES.length }, (_, index) => index + 1),
     );
-    const entries = listAgentHubCatalog(
-      new AgentHubCatalogStore(join(TEST_CWD, "market-order.json")),
-      NO_CLI_PROBE,
+    const entries = (
+      await listAgentHubCatalog(
+        new AgentHubCatalogStore(join(TEST_CWD, "market-order.json")),
+        NO_CLI_PROBE,
+      )
     ).entries;
     expect(entries).toHaveLength(MARKET_ENTRIES.length + 1);
     expect(entries[0]).toMatchObject({ id: "pi", builtIn: true, rank: null });
     expect(entries.slice(1).map((entry) => entry.rank)).toEqual(ranks);
   });
 
-  it("refuses to connect a candidate that has no reviewed runner", () => {
+  it("refuses to connect a candidate that has no reviewed runner", async () => {
     const store = new AgentHubCatalogStore(
       join(TEST_CWD, "market-refuse.json"),
     );
-    expect(() =>
+    await expect(
       installAgentHubSelection("codex", store, NO_CLI_PROBE),
-    ).toThrow(/安全 Runner|safe runner/);
+    ).rejects.toThrow(/安全 Runner|safe runner/);
     expect(store.selectedIds()).toEqual([]);
   });
 
-  it("rejects an unknown catalog id", () => {
+  it("rejects an unknown catalog id", async () => {
     const store = new AgentHubCatalogStore(
       join(TEST_CWD, "market-unknown.json"),
     );
-    expect(() =>
+    await expect(
       installAgentHubSelection("not-a-real-cli", store, NO_CLI_PROBE),
-    ).toThrow(/Unknown AgentHub candidate/);
+    ).rejects.toThrow(/Unknown AgentHub candidate/);
   });
 
   it.skipIf(process.platform !== "win32")(
     "refuses to connect a detected CLI whose launch target is missing",
-    () => {
+    async () => {
       const dir = join(TEST_CWD, "damaged-cli");
       mkdirSync(dir, { recursive: true });
       const shim = join(dir, "damaged.cmd");
@@ -340,18 +342,18 @@ describe("AgentHub market catalog", () => {
         join(TEST_CWD, "market-damaged.json"),
       );
       const probe: CatalogProbe = {
-        resolve: () => new Map([["pi.cmd", shim]]),
-        version: () => null,
+        resolve: async () => new Map([["pi.cmd", shim]]),
+        version: async () => null,
       };
-      const pi = listAgentHubCatalog(store, probe).entries.find(
+      const pi = (await listAgentHubCatalog(store, probe)).entries.find(
         (entry) => entry.id === "pi",
       );
       expect(pi?.detected).toBe(true);
       expect(pi?.installable).toBe(false);
       expect(pi?.note?.zh).toMatch(/损坏/);
-      expect(() => installAgentHubSelection("pi", store, probe)).toThrow(
-        /损坏|damaged/,
-      );
+      await expect(
+        installAgentHubSelection("pi", store, probe),
+      ).rejects.toThrow(/损坏|damaged/);
     },
   );
 });
@@ -537,7 +539,7 @@ describe("AgentHub per-agent model choice", () => {
     ]);
   });
 
-  it("stores a library model and a standalone custom model for one agent", () => {
+  it("stores a library model and a standalone custom model for one agent", async () => {
     const store = new AgentHubCatalogStore(join(TEST_CWD, "model-choice.json"));
     const options = [
       {
@@ -548,7 +550,7 @@ describe("AgentHub per-agent model choice", () => {
       },
     ];
 
-    const picked = setAgentHubWorkerModel(
+    const picked = await setAgentHubWorkerModel(
       "pi",
       "claude-sonnet-4-5",
       store,
@@ -559,7 +561,7 @@ describe("AgentHub per-agent model choice", () => {
     expect(entry?.model).toBe("claude-sonnet-4-5");
     expect(entry?.supportsModelSelection).toBe(true);
 
-    const custom = setAgentHubWorkerModel(
+    const custom = await setAgentHubWorkerModel(
       "pi",
       "openrouter/deepseek-v3",
       store,
@@ -570,24 +572,24 @@ describe("AgentHub per-agent model choice", () => {
       "openrouter/deepseek-v3",
     );
 
-    setAgentHubWorkerModel("pi", null, store, options, NO_CLI_PROBE);
+    await setAgentHubWorkerModel("pi", null, store, options, NO_CLI_PROBE);
     expect(store.modelFor("pi")).toBeNull();
   });
 
-  it("refuses a model id that must not reach a command line", () => {
+  it("refuses a model id that must not reach a command line", async () => {
     const store = new AgentHubCatalogStore(join(TEST_CWD, "model-unsafe.json"));
-    expect(() =>
+    await expect(
       setAgentHubWorkerModel("pi", "bad$(whoami)", store, [], NO_CLI_PROBE),
-    ).toThrow(/不能包含|characters/);
+    ).rejects.toThrow(/不能包含|characters/);
     expect(store.modelFor("pi")).toBeNull();
   });
 
-  it("refuses a model argument for an agent without a model flag", () => {
+  it("refuses a model argument for an agent without a model flag", async () => {
     const store = new AgentHubCatalogStore(
       join(TEST_CWD, "model-unsupported.json"),
     );
-    expect(() =>
+    await expect(
       setAgentHubWorkerModel("codex", "gpt-5.1", store, [], NO_CLI_PROBE),
-    ).toThrow(/cannot take a model/);
+    ).rejects.toThrow(/cannot take a model/);
   });
 });

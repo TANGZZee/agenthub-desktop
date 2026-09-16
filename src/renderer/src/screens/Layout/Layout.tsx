@@ -27,7 +27,7 @@ import Skills from "../Skills/Skills";
 import Memory from "../Memory/Memory";
 import Tools from "../Tools/Tools";
 import Gateway from "../Gateway/Gateway";
-import Office from "../Office/Office";
+import OfficePixel from "../Office/OfficePixel";
 import Providers from "../Providers/Providers";
 import Schedules from "../Schedules/Schedules";
 import Kanban from "../Kanban/Kanban";
@@ -992,7 +992,7 @@ function Layout({
 
           {visitedViews.has("office") && (
             <div style={paneStyle("office")}>
-              <Office profile={activeProfile} visible={view === "office"} />
+              <OfficePixel visible={view === "office"} />
             </div>
           )}
 
@@ -1060,7 +1060,7 @@ function Layout({
 
           {visitedViews.has("workers") && (
             <div style={paneStyle("workers")}>
-              <Workers />
+              <Workers visible={view === "workers"} />
             </div>
           )}
 

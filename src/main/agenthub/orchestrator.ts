@@ -45,6 +45,9 @@ interface LiveRun {
 export type PreflightRunner = (spec: {
   command: string;
   args: string[];
+  /** The profile's own env, which the probe must inherit to test the same
+   *  configuration the real run will use. */
+  env?: Record<string, string>;
 }) => boolean;
 
 export interface OrchestratorOptions {
@@ -96,6 +99,7 @@ function expandProfileArgs(
 function defaultPreflightRunner(spec: {
   command: string;
   args: string[];
+  env?: Record<string, string>;
 }): boolean {
   const launch = resolveWorkerLaunch(spec.command, spec.args);
   try {
@@ -104,7 +108,16 @@ function defaultPreflightRunner(spec: {
       windowsHide: true,
       timeout: 10_000,
       encoding: "utf8",
-      env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" },
+      // The profile's env must reach the probe, or readiness is measured
+      // against the wrong configuration. A provisioned worker points its CLI at
+      // a generated config directory through env; without inheriting it here
+      // the probe would consult the user's real config instead and reject a
+      // setup that is in fact ready.
+      env: {
+        ...process.env,
+        ...(spec.env ?? {}),
+        ELECTRON_RUN_AS_NODE: "1",
+      },
     });
     return true;
   } catch {
@@ -117,6 +130,10 @@ function defaultPreflightRunner(spec: {
  * is launchable at all, then that at least one of the profile's readiness
  * probes exits 0 (for example a CLI with working model credentials). This turns
  * a silent multi-minute hang into an immediate, readable admission error.
+ *
+ * The probes are supplied by the profile, which knows what "ready" means for
+ * its CLI; this function only runs them. A profile that needs to probe a
+ * *chosen model* rather than a vendor bakes that into its probe list.
  */
 function assertWorkerReady(profile: WorkerProfile, run: PreflightRunner): void {
   try {
@@ -131,7 +148,11 @@ function assertWorkerReady(profile: WorkerProfile, run: PreflightRunner): void {
   if (!preflight || preflight.probes.length === 0) return;
   const passed = preflight.probes.some((args) => {
     try {
-      return run({ command: profile.command, args });
+      return run({
+        command: profile.command,
+        args,
+        env: profile.profileEnv,
+      });
     } catch {
       return false;
     }

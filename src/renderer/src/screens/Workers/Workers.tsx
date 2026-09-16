@@ -288,7 +288,11 @@ function ModelPicker({
   );
 }
 
-function Workers(): React.JSX.Element {
+function Workers({
+  visible = true,
+}: {
+  visible?: boolean;
+}): React.JSX.Element {
   const { t, locale } = useI18n();
   const zh = locale.startsWith("zh");
   const txt = (zhText: string, enText: string): string =>
@@ -375,18 +379,28 @@ function Workers(): React.JSX.Element {
   );
 
   useEffect(() => {
+    // Everything this screen polls with is expensive: `agenthubCatalogList`
+    // re-probes CLI paths and spawns a `--version` process per hit, and the
+    // whole catalog payload is re-sent. Tabs stay mounted after their first
+    // visit (the Layout keeps them alive behind `display:none`), so polling
+    // unconditionally meant a visited Workers tab kept spawning processes and
+    // waking the renderer forever — visible as the app "stuttering every so
+    // often" while you were somewhere else entirely.
+    if (!visible) return;
     void refresh();
     const stop = window.hermesAPI.onAgenthubWorkerChanged(() => {
       void refresh({ silent: true });
     });
     const id = window.setInterval(() => {
+      // Still skip while the window itself is hidden or minimised.
+      if (document.visibilityState !== "visible") return;
       void refresh({ silent: true });
     }, 2500);
     return () => {
       stop();
       window.clearInterval(id);
     };
-  }, [refresh]);
+  }, [refresh, visible]);
 
   /**
    * Fetch a fresh market catalog. This is the only action that reaches the

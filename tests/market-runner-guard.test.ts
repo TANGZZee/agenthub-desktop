@@ -37,7 +37,7 @@ function alwaysFoundProbe(): CatalogProbe {
           .filter((name) => !/\.(cmd|bat)$/i.test(name))
           .map((name) => [name, `/fake/${name}`]),
       ),
-    version: () => "1.0.0",
+    version: async () => "1.0.0",
   };
 }
 
@@ -62,8 +62,8 @@ describe("market catalog cannot grant runnability", () => {
     expect(runnerStatusFor("anything-invented-by-the-catalog")).toBe("planned");
   });
 
-  it("keeps catalog entries listed-only even when the CLI is present", () => {
-    const { entries } = listAgentHubCatalog(store(), alwaysFoundProbe());
+  it("keeps catalog entries listed-only even when the CLI is present", async () => {
+    const { entries } = await listAgentHubCatalog(store(), alwaysFoundProbe());
 
     // Every catalog candidate is detected by the probe (it claims everything
     // exists) yet none of them may be connected.
@@ -78,8 +78,8 @@ describe("market catalog cannot grant runnability", () => {
     }
   });
 
-  it("marks the reviewed runner as connectable when its CLI is present", () => {
-    const { entries } = listAgentHubCatalog(store(), alwaysFoundProbe());
+  it("marks the reviewed runner as connectable when its CLI is present", async () => {
+    const { entries } = await listAgentHubCatalog(store(), alwaysFoundProbe());
     const pi = entries.find((item) => item.id === "pi");
 
     expect(pi?.runner).toBe("available");

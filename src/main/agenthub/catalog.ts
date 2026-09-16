@@ -255,9 +255,9 @@ function buildNote(
 
 export interface CatalogProbe {
   /** Resolve executable names to absolute paths in one batch. */
-  resolve: (names: readonly string[]) => Map<string, string>;
+  resolve: (names: readonly string[]) => Promise<Map<string, string>>;
   /** Read a CLI version for a resolved path. */
-  version: (path: string) => string | null;
+  version: (path: string) => Promise<string | null>;
 }
 
 const DEFAULT_CATALOG_PROBE: CatalogProbe = {
@@ -265,18 +265,18 @@ const DEFAULT_CATALOG_PROBE: CatalogProbe = {
   version: readCliVersionCached,
 };
 
-function buildEntry(
+async function buildEntry(
   source: CatalogSource,
   selected: boolean,
   probe: CatalogProbe,
   found: Map<string, string>,
   model: string | null,
-): WorkerCatalogEntry {
+): Promise<WorkerCatalogEntry> {
   const names =
     process.platform === "win32" ? source.binaries.win : source.binaries.unix;
   const executablePath =
     names.map((name) => found.get(name)).find(Boolean) ?? null;
-  const version = executablePath ? probe.version(executablePath) : null;
+  const version = executablePath ? await probe.version(executablePath) : null;
   const detected = Boolean(executablePath);
   const launchHealthy = executablePath
     ? isLaunchHealthy(executablePath)
@@ -312,10 +312,10 @@ function buildEntry(
   };
 }
 
-export function listAgentHubCatalog(
+export async function listAgentHubCatalog(
   store = getAgentHubCatalogStore(),
   probe: CatalogProbe = DEFAULT_CATALOG_PROBE,
-): WorkerCatalogResult {
+): Promise<WorkerCatalogResult> {
   const selected = new Set(store.selectedIds());
   const sources = catalogSources();
   const names = sources.flatMap((source) =>
@@ -323,30 +323,35 @@ export function listAgentHubCatalog(
       ? [...source.binaries.win]
       : [...source.binaries.unix],
   );
-  const found = probe.resolve(names);
-  const entries = sources
-    .map((source) =>
-      buildEntry(
-        source,
-        selected.has(source.id),
-        probe,
-        found,
-        store.modelFor(source.id),
+  const found = await probe.resolve(names);
+  // Version probes are independent per entry, so they run concurrently: an
+  // npm shim starts a whole Node runtime (~0.3–0.5 s), and doing them one at a
+  // time would stack that latency per detected CLI.
+  const entries = (
+    await Promise.all(
+      sources.map((source) =>
+        buildEntry(
+          source,
+          selected.has(source.id),
+          probe,
+          found,
+          store.modelFor(source.id),
+        ),
       ),
     )
-    .sort((a, b) => (a.rank ?? -1) - (b.rank ?? -1));
+  ).sort((a, b) => (a.rank ?? -1) - (b.rank ?? -1));
   return { entries };
 }
 
-function requireEntry(
+async function requireEntry(
   id: unknown,
   store = getAgentHubCatalogStore(),
   probe: CatalogProbe = DEFAULT_CATALOG_PROBE,
-): WorkerCatalogEntry {
+): Promise<WorkerCatalogEntry> {
   if (!isCatalogId(id)) {
     throw new Error(`Unknown AgentHub candidate '${String(id)}'.`);
   }
-  const entry = listAgentHubCatalog(store, probe).entries.find(
+  const entry = (await listAgentHubCatalog(store, probe)).entries.find(
     (item) => item.id === id,
   );
   if (!entry) throw new Error(`Unknown AgentHub candidate '${String(id)}'.`);
@@ -360,12 +365,12 @@ function refusalMessage(entry: WorkerCatalogEntry): string {
   );
 }
 
-export function installAgentHubSelection(
+export async function installAgentHubSelection(
   id: unknown,
   store = getAgentHubCatalogStore(),
   probe: CatalogProbe = DEFAULT_CATALOG_PROBE,
-): WorkerCatalogResult {
-  const entry = requireEntry(id, store, probe);
+): Promise<WorkerCatalogResult> {
+  const entry = await requireEntry(id, store, probe);
   if (!entry.detected || !entry.installable) {
     throw new Error(refusalMessage(entry));
   }
@@ -374,12 +379,12 @@ export function installAgentHubSelection(
   return listAgentHubCatalog(store);
 }
 
-export function removeAgentHubSelection(
+export async function removeAgentHubSelection(
   id: unknown,
   store = getAgentHubCatalogStore(),
   probe: CatalogProbe = DEFAULT_CATALOG_PROBE,
-): WorkerCatalogResult {
-  requireEntry(id, store, probe);
+): Promise<WorkerCatalogResult> {
+  await requireEntry(id, store, probe);
   store.remove(String(id));
   return listAgentHubCatalog(store);
 }
@@ -428,14 +433,14 @@ function findLibraryModel(
  * configuration rather than by Hermes. Unsafe values are refused: this string
  * lands in a child process's argv.
  */
-export function setAgentHubWorkerModel(
+export async function setAgentHubWorkerModel(
   id: unknown,
   model: unknown,
   store = getAgentHubCatalogStore(),
   options = listAgentHubModelOptions(),
   probe: CatalogProbe = DEFAULT_CATALOG_PROBE,
-): WorkerCatalogResult {
-  const entry = requireEntry(id, store, probe);
+): Promise<WorkerCatalogResult> {
+  const entry = await requireEntry(id, store, probe);
   if (!entry.supportsModelSelection) {
     throw new Error(
       `${entry.name} / this agent cannot take a model argument yet.`,

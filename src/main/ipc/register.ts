@@ -440,6 +440,10 @@ import {
   inspectWebPreview,
 } from "../web-preview-inspector";
 import {
+  collectOfficeActivity,
+  type AgentRosterEntry,
+} from "../agent-activity";
+import {
   dispatchWorkerTool,
   getWorkerToolStatus,
   setWorkerChangeListener,
@@ -2058,6 +2062,9 @@ export function registerIpcHandlers(context: IpcContext): void {
   });
 
   // Model discovery — fetch the provider's /v1/models for autocomplete.
+  // `providerLabel` identifies a *named* custom provider: several may share
+  // one base URL while serving different catalogues, so it participates in
+  // both the result cache key and the API-key lookup.
   ipcMain.handle(
     "discover-provider-models",
     (
@@ -2066,8 +2073,15 @@ export function registerIpcHandlers(context: IpcContext): void {
       baseUrl: string | undefined,
       apiKey: string | undefined,
       profile?: string,
+      providerLabel?: string,
     ) => {
-      return discoverProviderModels(provider, baseUrl, apiKey, profile);
+      return discoverProviderModels(
+        provider,
+        baseUrl,
+        apiKey,
+        profile,
+        providerLabel,
+      );
     },
   );
 
@@ -2083,9 +2097,17 @@ export function registerIpcHandlers(context: IpcContext): void {
       model: string,
       baseUrl: string | undefined,
       profile?: string,
+      providerLabel?: string,
     ) => {
       const fallback = (): Promise<number | null> =>
-        getModelContextWindow(provider, model, baseUrl, undefined, profile);
+        getModelContextWindow(
+          provider,
+          model,
+          baseUrl,
+          undefined,
+          profile,
+          providerLabel,
+        );
       const conn = getConnectionConfig();
       if (conn.mode === "remote") {
         return withRemoteDashboard(
@@ -3592,14 +3614,14 @@ export function registerIpcHandlers(context: IpcContext): void {
   );
   ipcMain.handle("agenthub-tool-status", () => getWorkerToolStatus());
   ipcMain.handle("agenthub-catalog-list", () => listAgentHubCatalog());
-  ipcMain.handle("agenthub-catalog-install", (_event, id: unknown) => {
-    const result = installAgentHubSelection(id);
+  ipcMain.handle("agenthub-catalog-install", async (_event, id: unknown) => {
+    const result = await installAgentHubSelection(id);
     resetDefaultOrchestrator();
     getMainWindow()?.webContents.send("agenthub-worker-changed");
     return result;
   });
-  ipcMain.handle("agenthub-catalog-remove", (_event, id: unknown) => {
-    const result = removeAgentHubSelection(id);
+  ipcMain.handle("agenthub-catalog-remove", async (_event, id: unknown) => {
+    const result = await removeAgentHubSelection(id);
     resetDefaultOrchestrator();
     getMainWindow()?.webContents.send("agenthub-worker-changed");
     return result;
@@ -3607,8 +3629,8 @@ export function registerIpcHandlers(context: IpcContext): void {
   ipcMain.handle("agenthub-catalog-models", () => listAgentHubModelOptions());
   ipcMain.handle(
     "agenthub-catalog-set-model",
-    (_event, id: unknown, model: unknown) => {
-      const result = setAgentHubWorkerModel(id, model);
+    async (_event, id: unknown, model: unknown) => {
+      const result = await setAgentHubWorkerModel(id, model);
       resetDefaultOrchestrator();
       getMainWindow()?.webContents.send("agenthub-worker-changed");
       return result;
@@ -3621,9 +3643,45 @@ export function registerIpcHandlers(context: IpcContext): void {
   });
   ipcMain.handle("agenthub-market-refresh", async () => {
     const state = await refreshMarketCatalog();
-    const result = listAgentHubCatalog();
+    const result = await listAgentHubCatalog();
     getMainWindow()?.webContents.send("agenthub-worker-changed");
     const { entries, ...rest } = state;
     return { ...rest, count: entries.length, catalog: result };
+  });
+
+  // Office activity: which agents exist (catalog + worker layer) joined with
+  // what each one is doing right now (its CLI's JSONL journal). The roster is
+  // authoritative for identity; the journal only supplies tool-level detail.
+  ipcMain.handle("agenthub-office-activity", async () => {
+    let workers: Array<{ id: string; name: string; running: number }> = [];
+    try {
+      const payload = await dispatchWorkerTool("worker.list", {});
+      if (payload && payload.ok) {
+        const result = payload.result as {
+          workers?: Array<{ id: string; name: string; running: number }>;
+        } | null;
+        workers = result?.workers ?? [];
+      }
+    } catch {
+      // A dead worker tool means "no live runs", not a failed call: the catalog
+      // still decides who exists.
+    }
+
+    const catalog = await listAgentHubCatalog();
+    const roster: AgentRosterEntry[] = catalog.entries
+      .filter((entry) => entry.installed && entry.enabled)
+      .map((entry) => ({
+        id: entry.id,
+        name: entry.name,
+        enabled: true,
+        runningCount: workers.find((w) => w.id === entry.id)?.running ?? 0,
+      }));
+
+    // The connected roster only covers agents explicitly hooked up through the
+    // Capabilities screen. An agent configured in `config/agents.json` and
+    // working right now is absent from it, which would leave the office empty
+    // while its agents are visibly busy — so journal-active agents are merged
+    // in. Identity still comes from the roster; the journal only adds.
+    return collectOfficeActivity(roster);
   });
 }
