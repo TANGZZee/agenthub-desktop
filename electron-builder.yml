@@ -18,6 +18,26 @@ files:
   - "!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}"
   - "!{.env,.env.*,.npmrc,pnpm-lock.yaml}"
   - "!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}"
+  # ── Fork-specific excludes ─────────────────────────────────────────────
+  # This checkout carries a second, unrelated Tauri application rooted at
+  # src-tauri/. electron-builder packs the whole project by default, so its
+  # Rust build cache (target/ alone: ~7.4 GB of .lib/.rlib) was riding along
+  # inside app.asar and ballooning the installer to 7.7 GB for ~28 MB of
+  # actual application code. None of it is loaded at runtime.
+  - "!src-tauri/**"
+  - "!third_party/**"
+  - "!legacy-agenthub/**"
+  - "!Temp/**"
+  # Dev-only material: never read by the packaged app.
+  - "!tests/**"
+  - "!docs/**"
+  - "!previews/**"
+  - "!{lat.md,AGENTS.md,CLAUDE.md,CONTRIBUTING.md,CONTRIBUTING.*.md}"
+  - "!{README.md,README.*.md,Development.md}"
+  - "!{*.md,*.bat,*.ps1}"
+  - "!{.husky,.github,.agents,.claude,.codex,.pi,.sandbox}/**"
+  - "!*.tsbuildinfo"
+  - "!{vite.config.ts,vitest.config.ts,tsconfig*.json}"
 asarUnpack:
   - resources/**
   - node_modules/better-sqlite3/prebuilds/*.node
