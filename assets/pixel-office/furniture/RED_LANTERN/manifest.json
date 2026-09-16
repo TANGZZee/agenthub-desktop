@@ -1,0 +1,14 @@
+{
+  "id": "RED_LANTERN",
+  "name": "Red Lantern",
+  "name_zh": "红灯笼",
+  "category": "wall",
+  "type": "asset",
+  "canPlaceOnWalls": true,
+  "canPlaceOnSurfaces": false,
+  "backgroundTiles": 0,
+  "width": 16,
+  "height": 32,
+  "footprintW": 1,
+  "footprintH": 2
+}

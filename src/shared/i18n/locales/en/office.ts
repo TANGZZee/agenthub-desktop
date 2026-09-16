@@ -1,6 +1,10 @@
 export default {
   title: "Office",
   subtitle: "Your agents at work, live in 3D",
+  pixelSubtitle: "Your independent agents at work, live in the pixel office",
+  pixelNoAgents:
+    "No agents connected yet. Connect a CLI from the Capabilities screen first.",
+  pixelFailures: "{{count}} failed tool calls",
   loadingAgents: "Loading agents...",
   noAgents: "No agents found.",
   refresh: "Refresh",

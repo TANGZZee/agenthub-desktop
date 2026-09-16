@@ -142,6 +142,29 @@ export interface WorkerCatalogResult {
 }
 
 /**
+ * One agent's live activity for the Office visualization.
+ *
+ * `agentId` is the AgentHub worker id — the roster (catalog + worker layer)
+ * decides which entries exist, while the journal supplies `currentTool`/`recent`.
+ * An agent with no readable journal still appears here, idle.
+ *
+ * `currentTool` carries the canonical vocabulary from `shared/agent-activity`;
+ * each renderer maps that onto its own animation names, so this payload stays
+ * independent of any one visualization.
+ */
+export interface AgentActivitySnapshot {
+  agentId: string;
+  /** Canonical tool currently running, or null when the agent is idle. */
+  currentTool: string | null;
+  /** The CLI's own tool name, for display/debugging. */
+  rawToolName: string | null;
+  /** Recent terminal transitions, newest first. */
+  recent: Array<{ tool: string; phase: "finished" | "failed"; at: string | null }>;
+  /** Failed tool calls within the observed window. */
+  failedCount: number;
+}
+
+/**
  * Where the market candidate list came from. The app prefers a freshly fetched
  * document, then the last good one cached on disk, and falls back to the table
  * it shipped with — so the UI can say which one the user is looking at.

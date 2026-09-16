@@ -1,0 +1,14 @@
+{
+  "id": "THERMOS_CUP",
+  "name": "Thermos Cup",
+  "name_zh": "保温杯",
+  "category": "decor",
+  "type": "asset",
+  "canPlaceOnWalls": false,
+  "canPlaceOnSurfaces": true,
+  "backgroundTiles": 0,
+  "width": 16,
+  "height": 16,
+  "footprintW": 1,
+  "footprintH": 1
+}

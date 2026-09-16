@@ -1,0 +1,14 @@
+{
+  "id": "SLOGAN_BANNER",
+  "name": "Slogan Banner",
+  "name_zh": "企业标语",
+  "category": "wall",
+  "type": "asset",
+  "canPlaceOnWalls": true,
+  "canPlaceOnSurfaces": false,
+  "backgroundTiles": 0,
+  "width": 32,
+  "height": 16,
+  "footprintW": 2,
+  "footprintH": 1
+}

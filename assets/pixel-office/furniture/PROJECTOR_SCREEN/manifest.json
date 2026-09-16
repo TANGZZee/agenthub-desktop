@@ -1,0 +1,14 @@
+{
+  "id": "PROJECTOR_SCREEN",
+  "name": "Projector Screen",
+  "name_zh": "投影幕布",
+  "category": "wall",
+  "type": "asset",
+  "canPlaceOnWalls": true,
+  "canPlaceOnSurfaces": false,
+  "backgroundTiles": 0,
+  "width": 32,
+  "height": 32,
+  "footprintW": 2,
+  "footprintH": 2
+}

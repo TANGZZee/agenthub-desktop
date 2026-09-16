@@ -1,6 +1,9 @@
 export default {
   title: "办公室",
   subtitle: "你的智能体正在 3D 中实时工作",
+  pixelSubtitle: "你的独立智能体正在像素办公室里实时工作",
+  pixelNoAgents: "还没有连接任何智能体。先到「能力」页连接一个 CLI。",
+  pixelFailures: "{{count}} 次工具调用失败",
   loadingAgents: "正在加载智能体…",
   noAgents: "没有找到智能体。",
   refresh: "刷新",
