@@ -1,4 +1,4 @@
-// @lat: [[office-interactions#Backend Wallet Actions]]
+// @lat: [[wallet-token-balances#Wallet Sync#Backend wallet actions]]
 import { apiHeaders } from "./hermes-account";
 import { mapCloudWallet, resolveLinkedAgent } from "./wallet-sync";
 import type {

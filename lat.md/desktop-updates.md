@@ -54,6 +54,14 @@ Linux packages use the space-free `/opt/HermesOne` directory while macOS keeps t
 
 The global packaging product name supplies Electron Builder's Linux install-directory component. The explicit macOS `executableName` preserves its bundle path, and platform display labels retain Hermes One. The Linux sandbox hook targets the same directory. [[tests/packaging-identity.test.ts]] validates the configuration with the installed Electron Builder schema and evaluates its real application metadata and artifact macros.
 
+### Fork-only source trees stay out of the package
+
+Electron Builder packs the whole project directory by default, so any unrelated tree committed to this fork rides along inside `app.asar` unless it is excluded explicitly.
+
+This checkout also carries a separate, unused Tauri application under `src-tauri/`. Its Rust build cache was being packaged: `src-tauri/target/` alone contributed ~7.4 GB (single `.lib` artifacts up to 716 MB), inflating `app.asar` to ~7.7 GB around ~28 MB of real application code. The `files` list in `electron-builder.yml` therefore excludes `src-tauri/**`, the `third_party/**` submodule, `legacy-agenthub/**`, plus dev-only trees (`tests`, `docs`, `previews`, `Temp`, agent-harness dotdirs, and stray root markdown/scripts). That drops the archive to ~215 MB with no runtime impact — none of those paths are read by the packaged app.
+
+Two rules are load-bearing and must not be removed: `resources/**` stays (it is `asarUnpack`ed and holds `resources/agenthub/worker-skill/SKILL.md`), and `src/main/app/start.ts` imports `resources/icon.png` at build time. `out/**` and `node_modules/**` are the application itself. Verify a packaging change by building `--dir` and confirming the app still launches, not by archive size alone.
+
 ## Engine update and the venv lock
 
 The engine card updates the Python install in place, so the desktop has to release its own venv processes before the update can run at all.

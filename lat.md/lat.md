@@ -28,14 +28,11 @@ This directory defines the high-level concepts, business logic, and architecture
 - [[kanban]] — the JIRA-style multi-agent board tab; a thin client over the `hermes kanban` CLI with canonical status columns, an archived toggle, and focus/poll refresh.
 - [[agenthub-workers]] — controlled Worker tools, admission, redacted run records, and the M1 Echo closed loop.
 - [[agenthub-worker-tests]] — the AgentHub admission/runner/orchestrator test specs, each backed by a `@lat`-tagged test.
+- [[agent-activity]] — the three-layer normalization that turns Claude Code / pi / codex session journals into one tool vocabulary, joined with the worker roster that decides which agents exist.
+- [[office-pixel]] — the pixel-office Office tab: a build-time sprite pipeline, viewport-fit zoom, and characters that are AgentHub agents rather than profiles.
 
 - [[analytics]] — privacy-first, opt-out usage analytics that POST anonymous events to the in-house Hermes analytics service, keyed by a per-install localStorage UUID; replaces the former PostHog integration.
 - [[wallet-token-balances]] — profile-scoped Base mainnet wallets with encrypted recovery phrases, and on-chain ERC-20 token balance reads via ethers v6.
-- [[office-3d-traffic]] — the Office tab's backdrop traffic: car-following and junction-yielding simulation, per-model nose orientation, and instanced fleet rendering in a dozen draw calls.
-- [[office-3d-interiors]] — enterable office/bank/showroom interiors: per-location conditional mounting (city unmounts while indoors), camera fly-in rig, interactable objects (ATM → wallet, desk → agent, car → spec card), and idle-agent walking trips between buildings.
-- [[office-3d-walk-mode]] — GTA-style walk mode: glass roofs over the enterable buildings, the user's own third-person avatar (WASD + chase camera, shared crowd/collision), doorway-driven interior loading, and proximity Press-E interactions.
-- [[office-interactions]] — space representatives: interactive bank tellers whose menu runs account status, balances, and account creation against the hermes-one backend for a chosen agent; the extensible pattern for future spaces (showroom sales, building space).
-- [[office-world-actions]] — chat-commanded errands: the agent's LLM emits world-action blocks from the office chat, its avatar walks the trip route to the bank/showroom, and the rep modal auto-opens running the requested action on arrival.
 - [[mcp-servers]] — add / edit / remove / enable / test MCP servers from the Capabilities → MCP tab; the shared add+edit modal and the in-place atomic `updateMcpServer` upsert (config.yaml locally, gateway REST in Remote/SSH).
 - [[scheduled-jobs]] — schedule state normalization across local files, remote API responses, and named SSH profiles.
 - [[localization]] — locale namespaces, the zh-CN coverage guard that fails on a missing key, and the shared Chinese terminology list.
