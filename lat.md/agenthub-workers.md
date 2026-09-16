@@ -84,6 +84,12 @@ The subprocess approach was wrong twice over. It measured ~3.4 s for the full na
 
 Walking `PATH` costs no child process at all: each directory is listed **once** with `readdir` and every name is answered from that listing, rather than issuing a `stat` per (directory × name × `PATHEXT`) combination — with ~45 PATH entries, 40 names and 9 extensions the naive form was ~16k stats and seconds of work. A cold full-catalog probe is now single-digit milliseconds. Bare names are completed with `PATHEXT`, matching how `where.exe` resolves `claude` to `claude.cmd`.
 
+### The inherited PATH is not the user's PATH
+
+The search is the inherited `PATH` **plus** the global install directories the catalog's own entries install into (`npm_config_prefix`, `%APPDATA%\npm`, `%LOCALAPPDATA%\pnpm`).
+
+A packaged app inherits the environment of whatever launched it, and that is not necessarily the environment the user has since edited — adding a directory to `PATH` does not reach a process started from a shortcut whose parent never refreshed its copy. That produced a real report: `codex --version` worked in a fresh terminal while the app still showed Codex as undetected, because the npm global directory was on the persisted `PATH` but not in the app process's. Since every catalog entry installs through `npm install -g`, that directory is searched explicitly instead of assumed reachable.
+
 Version probes are the remaining cost (~0.75 s per hit, since an npm shim starts a Node runtime), so they are **asynchronous** and cached on the same TTL, and run concurrently per entry. See [[sidebar-navigation#Off-screen tabs must stop polling]] for why the tab that triggers this must also stop polling when hidden. Covered by [[tests/agenthub-cli-discovery.test.ts]].
 
 ## Per-agent model choice

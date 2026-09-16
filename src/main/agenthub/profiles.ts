@@ -234,6 +234,41 @@ function runCaptured(
 }
 
 /**
+ * Directories to search, which is the inherited `PATH` **plus** the global
+ * install locations the catalog's own entries are installed into.
+ *
+ * A packaged app inherits the environment of whatever launched it, and that is
+ * not necessarily the environment the user has since edited: adding a directory
+ * to `PATH` does not reach a process started from a shortcut whose parent never
+ * refreshed its copy. That produced a real report — `codex --version` worked in
+ * a fresh terminal while the app still showed the CLI as undetected, because the
+ * npm global directory was on the persisted `PATH` but not in the app's.
+ *
+ * Every catalog entry installs through `npm install -g`, so the npm global
+ * prefix is checked explicitly rather than assumed to be reachable.
+ */
+function executableSearchDirs(): string[] {
+  const pathValue = process.env.PATH ?? process.env.Path ?? "";
+  const extra: Array<string | undefined> = [
+    process.env.npm_config_prefix,
+    process.env.APPDATA ? join(process.env.APPDATA, "npm") : undefined,
+    process.env.LOCALAPPDATA ? join(process.env.LOCALAPPDATA, "pnpm") : undefined,
+  ];
+
+  const seen = new Set<string>();
+  const dirs: string[] = [];
+  for (const dir of [...pathValue.split(delimiter), ...extra]) {
+    if (!dir) continue;
+    // Trailing separators and case must not make one directory look like two.
+    const key = dir.replace(/[\\/]+$/, "").toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    dirs.push(dir);
+  }
+  return dirs;
+}
+
+/**
  * Locate one executable name on `PATH` by inspecting the filesystem directly.
  *
  * This replaces a `where.exe`/`which` subprocess. That lookup measured ~3.4 s
@@ -251,8 +286,7 @@ function runCaptured(
  * `where.exe` resolves `claude` to `claude.cmd`.
  */
 function findExecutableOnPath(name: string): string | null {
-  const pathValue = process.env.PATH ?? process.env.Path ?? "";
-  const dirs = pathValue.split(delimiter).filter(Boolean);
+  const dirs = executableSearchDirs();
   const hasExtension = /\.[^./\\]+$/.test(name);
 
   const wanted = new Set([name.toLowerCase()]);

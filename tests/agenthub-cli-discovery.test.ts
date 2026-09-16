@@ -1,5 +1,12 @@
-import { describe, expect, it } from "vitest";
-import { probeCliCommands } from "../src/main/agenthub/profiles";
+import { afterEach, describe, expect, it } from "vitest";
+import { mkdirSync, rmSync, writeFileSync } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
+import { randomUUID } from "crypto";
+import {
+  clearCliProbeCache,
+  probeCliCommands,
+} from "../src/main/agenthub/profiles";
 
 /**
  * CLI discovery.
@@ -50,4 +57,44 @@ describe("CLI path discovery", () => {
     await probeCliCommands(names);
     expect(Date.now() - started).toBeLessThan(2_000);
   });
+
+  it.skipIf(process.platform !== "win32")(
+    "finds a CLI in the npm global directory even when PATH omits it",
+    async () => {
+      // The reported failure: `codex --version` worked in a fresh terminal while
+      // the app still showed the CLI as undetected, because the npm global
+      // directory was on the persisted PATH but not in the app process's
+      // inherited copy. Every catalog entry installs with `npm install -g`, so
+      // that directory is searched explicitly rather than assumed reachable.
+      const scratch = join(tmpdir(), "cli-discovery-" + randomUUID());
+      const npmDir = join(scratch, "npm");
+      mkdirSync(npmDir, { recursive: true });
+      writeFileSync(join(npmDir, "codex.cmd"), "@ECHO off\r\n", "utf8");
+
+      const savedPath = process.env.PATH;
+      const savedAppData = process.env.APPDATA;
+      // A PATH that plainly does not contain the npm directory.
+      process.env.PATH = "C:\\Windows\\System32";
+      process.env.APPDATA = scratch;
+      clearCliProbeCache();
+      try {
+        const found = await probeCliCommands(["codex.cmd", "codex"]);
+        expect(found.get("codex.cmd")).toBe(join(npmDir, "codex.cmd"));
+        // A bare name resolves through PATHEXT to the same shim.
+        expect(found.get("codex")).toBe(join(npmDir, "codex.cmd"));
+      } finally {
+        process.env.PATH = savedPath;
+        if (savedAppData === undefined) delete process.env.APPDATA;
+        else process.env.APPDATA = savedAppData;
+        clearCliProbeCache();
+        rmSync(scratch, { recursive: true, force: true });
+      }
+    },
+  );
+});
+
+afterEach(() => {
+  // Results are cached for 30 s; a test that rewrites PATH must not leak that
+  // into the next one.
+  clearCliProbeCache();
 });
