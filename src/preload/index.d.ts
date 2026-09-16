@@ -50,6 +50,7 @@ import type {
   AgentHubModelOption,
   WorkerMarketStatus,
   WorkerMarketRefreshResult,
+  AgentActivitySnapshot,
 } from "../shared/agenthub";
 
 interface ElectronAPI {
@@ -525,6 +526,7 @@ interface HermesAPI {
     baseUrl?: string,
     apiKey?: string,
     profile?: string,
+    providerLabel?: string,
   ) => Promise<{
     models: string[];
     status: "ok" | "no-key" | "error" | "unsupported" | "unknown-host";
@@ -537,6 +539,7 @@ interface HermesAPI {
     model: string,
     baseUrl?: string,
     profile?: string,
+    providerLabel?: string,
   ) => Promise<number | null>;
   onChatChunk: (callback: (runId: string, chunk: string) => void) => () => void;
   onChatReasoningChunk: (
@@ -1396,6 +1399,8 @@ interface HermesAPI {
   ) => Promise<WorkerCatalogResult>;
   agenthubMarketStatus: () => Promise<WorkerMarketStatus>;
   agenthubMarketRefresh: () => Promise<WorkerMarketRefreshResult>;
+  /** Office activity: roster joined with each agent's journal detail. */
+  agenthubOfficeActivity: () => Promise<AgentActivitySnapshot[]>;
   onAgenthubWorkerChanged: (callback: () => void) => () => void;
 }
 

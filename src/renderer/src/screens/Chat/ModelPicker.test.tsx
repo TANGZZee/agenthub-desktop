@@ -27,6 +27,7 @@ const groups: ModelGroup[] = [
   {
     provider: "openrouter",
     providerLabel: "providers.openrouter",
+    groupKey: "openrouter",
     models: [
       {
         provider: "openrouter",
@@ -45,6 +46,7 @@ const groups: ModelGroup[] = [
   {
     provider: "ollama",
     providerLabel: "providers.ollama",
+    groupKey: "ollama",
     models: [
       {
         provider: "ollama",

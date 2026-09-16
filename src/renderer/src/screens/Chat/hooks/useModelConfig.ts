@@ -29,6 +29,9 @@ interface SavedModelForPicker {
   model: string;
   name: string;
   baseUrl?: string;
+  /** Named custom provider this model belongs to (absent for native
+   *  providers). Two named providers may share one base URL. */
+  providerLabel?: string;
 }
 
 function mergeLiveOllamaCloudModels(
@@ -78,14 +81,21 @@ function groupModelsByProvider(models: SavedModelForPicker[]): ModelGroup[] {
     // "OpenAI Compatible / Local" bucket. Each model keeps its raw provider +
     // baseUrl below so selection/routing is unchanged.
     const brand = displayBrandFromConfig(m.provider, m.baseUrl || "");
-    if (!groupMap.has(brand)) {
-      groupMap.set(brand, {
+    // A *named* custom provider is identified by its label, not by the brand
+    // (which collapses to "custom") — otherwise two providers on one base URL
+    // merge into a single entry and their identically-named models become
+    // indistinguishable. The label is also shown to the user.
+    const named = (m.providerLabel || "").trim();
+    const groupKey = named ? `label:${named}` : brand;
+    if (!groupMap.has(groupKey)) {
+      groupMap.set(groupKey, {
         provider: brand,
-        providerLabel: PROVIDERS.labels[brand] || brand,
+        providerLabel: named || PROVIDERS.labels[brand] || brand,
+        groupKey,
         models: [],
       });
     }
-    groupMap.get(brand)!.models.push({
+    groupMap.get(groupKey)!.models.push({
       provider: m.provider,
       model: m.model,
       label: m.name,
@@ -106,7 +116,11 @@ function sameModelGroups(left: ModelGroup[], right: ModelGroup[]): boolean {
   for (let i = 0; i < left.length; i += 1) {
     const a = left[i];
     const b = right[i];
-    if (a.provider !== b.provider || a.providerLabel !== b.providerLabel) {
+    if (
+      a.provider !== b.provider ||
+      a.providerLabel !== b.providerLabel ||
+      a.groupKey !== b.groupKey
+    ) {
       return false;
     }
     if (a.models.length !== b.models.length) return false;

@@ -31,6 +31,7 @@ import {
 // circular import via `model-discovery → config → ...`).
 import { PROVIDER_BASE_URLS } from "./provider-registry";
 import { normalizeModelEndpointUrl } from "../shared/model-endpoint";
+import { customProviderEnvKey } from "../shared/url-key-map";
 
 /** Providers whose `/models` we never call — either they don't expose it,
  *  use a different protocol, or rely on OAuth credentials we can't
@@ -263,12 +264,35 @@ const LOCAL_NO_KEY_PROVIDERS = new Set([
   "llamacpp",
 ]);
 
-function cacheKey(provider: string, baseUrl: string): string {
-  return `${provider.toLowerCase()}|${normalizeModelEndpointUrl(baseUrl)}`;
+/**
+ * Cache identity for a discovery result.
+ *
+ * `provider|baseUrl` alone is NOT a unique identity for custom endpoints:
+ * several named custom providers may legitimately share one gateway base URL
+ * while serving different model catalogues behind different API keys (the
+ * named-key design in `customProviderEnvKey`). Without the provider *label*
+ * the second provider hits the first one's cache entry and the UI shows the
+ * wrong model list.
+ *
+ * The label is therefore part of the key whenever the caller supplies one.
+ * Native providers are unaffected (they pass no label).
+ */
+function cacheKey(
+  provider: string,
+  baseUrl: string,
+  providerLabel?: string,
+): string {
+  const label = (providerLabel || "").trim();
+  const identity = `${provider.toLowerCase()}|${normalizeModelEndpointUrl(baseUrl)}`;
+  return label ? `${identity}|${label.toLowerCase()}` : identity;
 }
 
-function fromCache(provider: string, baseUrl: string): string[] | null {
-  const key = cacheKey(provider, baseUrl);
+function fromCache(
+  provider: string,
+  baseUrl: string,
+  providerLabel?: string,
+): string[] | null {
+  const key = cacheKey(provider, baseUrl, providerLabel);
   const entry = _cache.get(key);
   if (!entry) return null;
   if (Date.now() - entry.ts > CACHE_TTL_MS) {
@@ -278,8 +302,16 @@ function fromCache(provider: string, baseUrl: string): string[] | null {
   return entry.models;
 }
 
-function setCache(provider: string, baseUrl: string, models: string[]): void {
-  _cache.set(cacheKey(provider, baseUrl), { models, ts: Date.now() });
+function setCache(
+  provider: string,
+  baseUrl: string,
+  models: string[],
+  providerLabel?: string,
+): void {
+  _cache.set(cacheKey(provider, baseUrl, providerLabel), {
+    models,
+    ts: Date.now(),
+  });
 }
 
 /** Resolve the canonical base URL for a provider name, or null if we
@@ -289,12 +321,30 @@ function canonicalBaseUrl(provider: string): string | null {
   return direct || null;
 }
 
-/** Resolve the API key from the user's .env for a given provider. */
+/**
+ * Resolve the API key from the user's .env for a given provider.
+ *
+ * When the caller knows the *named* custom provider (the Providers screen
+ * always does), that label wins: its key lives under
+ * `CUSTOM_PROVIDER_<name>_KEY` and is the only way to tell two providers on
+ * one base URL apart. Without it the URL-derived key is used, which is the
+ * correct behaviour for native providers and for unlabelled custom endpoints.
+ */
 function envApiKeyFor(
   provider: string,
   baseUrl: string,
   profile: string | undefined,
+  providerLabel?: string,
 ): string {
+  const label = (providerLabel || "").trim();
+  if (label) {
+    const named = customProviderEnvKey(label);
+    const env = readEnv(profile);
+    const value = (env[named] || "").trim().replace(/^["']|["']$/g, "");
+    if (value) return value;
+    // Fall through to the URL-derived key when the named key is absent, so a
+    // provider configured before named keys existed keeps working.
+  }
   const envKey = expectedEnvKeyForModel(provider, baseUrl);
   if (!envKey) return "";
   const env = readEnv(profile);
@@ -511,12 +561,17 @@ export interface DiscoverModelsResult {
 }
 
 /** Discover available models for a provider.  Returns an object so the
- *  UI can distinguish "no key set yet" from "no models advertised". */
+ *  UI can distinguish "no key set yet" from "no models advertised".
+ *
+ *  `providerLabel` is the *named* custom provider this request belongs to.
+ *  It participates in the cache key and API-key lookup so two named custom
+ *  providers sharing one base URL don't shadow each other. */
 export async function discoverProviderModels(
   provider: string,
   baseUrlOverride: string | undefined,
   apiKeyOverride: string | undefined,
   profile: string | undefined,
+  providerLabel?: string,
 ): Promise<DiscoverModelsResult> {
   const lowerProvider = (provider || "").trim().toLowerCase();
 
@@ -566,12 +621,12 @@ export async function discoverProviderModels(
   const baseUrl = explicitBase || canonicalBaseUrl(lowerProvider) || "";
   if (!baseUrl) return { models: [], status: "unknown-host", cached: false };
 
-  const cached = fromCache(lowerProvider, baseUrl);
+  const cached = fromCache(lowerProvider, baseUrl, providerLabel);
   if (cached) return { models: cached, status: "ok", cached: true };
 
   const apiKey =
     (apiKeyOverride || "").trim() ||
-    envApiKeyFor(lowerProvider, baseUrl, profile);
+    envApiKeyFor(lowerProvider, baseUrl, profile, providerLabel);
   const canDiscoverWithoutKey =
     LOCAL_NO_KEY_PROVIDERS.has(lowerProvider) ||
     (lowerProvider === "custom" && isLoopbackBaseUrl(baseUrl));
@@ -579,7 +634,12 @@ export async function discoverProviderModels(
     return { models: [], status: "no-key", cached: false };
   }
 
-  const result = await fetchAndCacheModels(lowerProvider, baseUrl, apiKey);
+  const result = await fetchAndCacheModels(
+    lowerProvider,
+    baseUrl,
+    apiKey,
+    providerLabel,
+  );
   if (!result.reachable) {
     return { models: [], status: "error", cached: false };
   }
@@ -600,14 +660,15 @@ async function fetchAndCacheModels(
   lowerProvider: string,
   baseUrl: string,
   apiKey: string,
+  providerLabel?: string,
 ): Promise<FetchModelsResult> {
   const url = buildUrl(baseUrl);
   const headers = authHeaders(lowerProvider, apiKey);
   const result = await fetchModelsHttp(url, headers, 10_000);
   if (result.reachable) {
-    setCache(lowerProvider, baseUrl, result.models);
+    setCache(lowerProvider, baseUrl, result.models, providerLabel);
     _ctxCache.set(
-      cacheKey(lowerProvider, baseUrl),
+      cacheKey(lowerProvider, baseUrl, providerLabel),
       result.contextLengths ?? {},
     );
   }
@@ -628,6 +689,7 @@ export async function getModelContextWindow(
   baseUrlOverride: string | undefined,
   apiKeyOverride: string | undefined,
   profile: string | undefined,
+  providerLabel?: string,
 ): Promise<number | null> {
   const modelId = (model || "").trim();
   if (!modelId) return null;
@@ -660,7 +722,7 @@ export async function getModelContextWindow(
   const explicitBase = (baseUrlOverride || "").trim().replace(/\/+$/, "");
   const baseUrl = explicitBase || canonicalBaseUrl(lowerProvider) || "";
   if (!baseUrl) return null;
-  const key = cacheKey(lowerProvider, baseUrl);
+  const key = cacheKey(lowerProvider, baseUrl, providerLabel);
 
   const readCtx = (): number | null => _ctxCache.get(key)?.[modelId] ?? null;
 
@@ -676,13 +738,13 @@ export async function getModelContextWindow(
   // `_cache`-hit early-return would skip the ctx fetch entirely.
   const apiKey =
     (apiKeyOverride || "").trim() ||
-    envApiKeyFor(lowerProvider, baseUrl, profile);
+    envApiKeyFor(lowerProvider, baseUrl, profile, providerLabel);
   const canDiscoverWithoutKey =
     LOCAL_NO_KEY_PROVIDERS.has(lowerProvider) ||
     (lowerProvider === "custom" && isLoopbackBaseUrl(baseUrl));
   if (!apiKey && !canDiscoverWithoutKey) return null;
 
-  await fetchAndCacheModels(lowerProvider, baseUrl, apiKey);
+  await fetchAndCacheModels(lowerProvider, baseUrl, apiKey, providerLabel);
   return readCtx();
 }
 

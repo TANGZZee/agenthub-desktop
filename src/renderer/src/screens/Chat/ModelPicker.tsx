@@ -87,8 +87,11 @@ export const ModelPicker = memo(function ModelPicker({
         .filter((group) => group.models.length > 0)
     : modelGroups;
 
-  // Left rail: one entry per provider brand present (post-search) + counts.
+  // Left rail: one entry per provider group present (post-search) + counts.
+  // Keyed by `groupKey`, not brand — two named custom providers may share the
+  // "custom" brand yet must stay separate, selectable rows.
   const railProviders = filteredGroups.map((g) => ({
+    groupKey: g.groupKey,
     brand: g.provider,
     label: g.providerLabel,
     count: g.models.length,
@@ -100,15 +103,16 @@ export const ModelPicker = memo(function ModelPicker({
       ...m,
       brand: g.provider,
       providerLabel: g.providerLabel,
+      groupKey: g.groupKey,
     })),
   );
-  // Ignore a stale brand filter once search narrows it away → fall back to All.
+  // Ignore a stale rail filter once search narrows it away → fall back to All.
   const activeBrand =
-    selectedBrand && railProviders.some((p) => p.brand === selectedBrand)
+    selectedBrand && railProviders.some((p) => p.groupKey === selectedBrand)
       ? selectedBrand
       : null;
   const filteredRows = activeBrand
-    ? allRows.filter((r) => r.brand === activeBrand)
+    ? allRows.filter((r) => r.groupKey === activeBrand)
     : allRows;
 
   // Surface the current selection first. Rank: exact match (provider+model+URL)
@@ -207,12 +211,12 @@ export const ModelPicker = memo(function ModelPicker({
                 </button>
                 {railProviders.map((p) => (
                   <button
-                    key={p.brand}
+                    key={p.groupKey}
                     type="button"
-                    className={`chat-model-rail-item ${activeBrand === p.brand ? "active" : ""}`}
+                    className={`chat-model-rail-item ${activeBrand === p.groupKey ? "active" : ""}`}
                     onClick={() =>
                       setSelectedBrand((cur) =>
-                        cur === p.brand ? null : p.brand,
+                        cur === p.groupKey ? null : p.groupKey,
                       )
                     }
                   >
@@ -245,7 +249,7 @@ export const ModelPicker = memo(function ModelPicker({
                   return (
                     <button
                       type="button"
-                      key={`${m.provider}:${m.model}:${m.baseUrl}`}
+                      key={`${m.groupKey}:${m.provider}:${m.model}:${m.baseUrl}`}
                       className={`chat-model-row ${isActive ? "active" : ""}`}
                       onClick={() => select(m.provider, m.model, m.baseUrl)}
                     >

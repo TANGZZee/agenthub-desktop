@@ -614,4 +614,101 @@ describe("model-discovery", () => {
     );
     expect(ctx).toBeNull();
   });
+
+  // ── Named custom providers sharing one base URL ──────────────────────
+  // Two named custom providers may point at the same gateway while serving
+  // different catalogues behind different keys. Keying discovery by
+  // `provider|baseUrl` alone made the second provider read the first one's
+  // cached model list (and skip its own key entirely), so the model picker
+  // showed the wrong models. The provider label is now part of both the
+  // cache identity and the API-key lookup.
+
+  it("keeps two named custom providers on one base URL distinct", async () => {
+    // Serve a different catalogue per bearer token so a cache collision (or a
+    // wrong key lookup) shows up as the wrong model list.
+    server = http.createServer((req, res) => {
+      if (req.url === "/v1/models" && req.method === "GET") {
+        const auth = req.headers.authorization || "";
+        const id = auth === "Bearer sk-alpha" ? "alpha-model" : "beta-model";
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ data: [{ id }] }));
+        return;
+      }
+      res.writeHead(404);
+      res.end();
+    });
+    await listen();
+    writeFileSync(
+      join(testHome, ".env"),
+      "CUSTOM_PROVIDER_ALPHA_KEY=sk-alpha\nCUSTOM_PROVIDER_BETA_KEY=sk-beta\n",
+    );
+
+    const { discoverProviderModels } = await loadDiscovery();
+
+    // Same provider ("custom") and same base URL — only the label differs.
+    const alpha = await discoverProviderModels(
+      "custom",
+      baseUrl,
+      undefined,
+      undefined,
+      "Alpha",
+    );
+    expect(alpha.status).toBe("ok");
+    expect(alpha.cached).toBe(false);
+    expect(alpha.models).toEqual(["alpha-model"]);
+
+    // Regression: this used to return ["alpha-model"] from the cache without
+    // ever issuing a request (and without using Beta's key).
+    const beta = await discoverProviderModels(
+      "custom",
+      baseUrl,
+      undefined,
+      undefined,
+      "Beta",
+    );
+    expect(beta.status).toBe("ok");
+    expect(beta.cached).toBe(false);
+    expect(beta.models).toEqual(["beta-model"]);
+  });
+
+  it("still shares a cache entry between calls with the same label", async () => {
+    // Guards against over-separation: the label must not defeat caching.
+    let hits = 0;
+    server = http.createServer((req, res) => {
+      if (req.url === "/v1/models" && req.method === "GET") {
+        hits += 1;
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ data: [{ id: "alpha-model" }] }));
+        return;
+      }
+      res.writeHead(404);
+      res.end();
+    });
+    await listen();
+    writeFileSync(
+      join(testHome, ".env"),
+      "CUSTOM_PROVIDER_ALPHA_KEY=sk-alpha\n",
+    );
+
+    const { discoverProviderModels } = await loadDiscovery();
+    const first = await discoverProviderModels(
+      "custom",
+      baseUrl,
+      undefined,
+      undefined,
+      "Alpha",
+    );
+    const second = await discoverProviderModels(
+      "custom",
+      baseUrl,
+      undefined,
+      undefined,
+      "Alpha",
+    );
+
+    expect(first.cached).toBe(false);
+    expect(second.cached).toBe(true);
+    expect(second.models).toEqual(["alpha-model"]);
+    expect(hits).toBe(1);
+  });
 });

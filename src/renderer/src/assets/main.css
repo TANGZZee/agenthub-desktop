@@ -8704,6 +8704,17 @@ body:has(.shell-vibrant),
   font-weight: 600;
 }
 
+/* The provider config modal hosts the add-model autocomplete, an
+   absolutely-positioned popup. The base .models-modal sets `overflow: hidden`
+   to clip its frosted background to the rounded corners, which clipped that
+   popup too — lower suggestions were cut off and unreachable. This is the same
+   failure the model-select modal below already worked around. Letting overflow
+   through is safe because the popup is the only element that escapes, and it
+   is bounded by its own max-height. */
+.models-modal.provider-modal {
+  overflow: visible;
+}
+
 /* ===== "Select default model" picker — light-based (no strokes) ===== */
 .models-modal.model-select-modal {
   width: 560px;
@@ -8884,6 +8895,85 @@ body:has(.shell-vibrant),
 .provider-model-chip-del:hover,
 .provider-model-chip-edit:hover {
   color: var(--text-primary);
+}
+/* Inline context-window value on a model chip. Previously the configured size
+   was only visible via the chip's tooltip, so a set value looked unset. */
+.provider-model-chip-ctx {
+  margin-left: 6px;
+  font-family: var(--font-sans, inherit);
+  font-size: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+/* Bulk "fetch all" pill — same shape as the add pill, distinguished by a
+   lighter fill so the two read as sibling actions. */
+.provider-model-fetch-pill:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+/* Bulk remove — the mirror of fetch-all. Muted so it never competes with the
+   primary add action, warming to a danger tone on hover. */
+.provider-model-remove-pill {
+  color: var(--text-muted);
+}
+.provider-model-remove-pill:hover:not(:disabled) {
+  color: #ef4444;
+}
+.provider-model-remove-pill:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Anchor the add-input's autocomplete. The chip is `inline-flex` by default,
+   so without this the popup would position against an unrelated ancestor. */
+.provider-model-chip-input {
+  position: relative;
+}
+
+/* In-page autocomplete for the add-model input.
+   A native <datalist> popup is drawn by the browser and cannot be
+   height-limited or scrolled, so with a long catalogue it ran past the window
+   edge and the remaining entries were unreachable — the bug this replaces.
+   A real element gets a bounded height and its own scrollbar. */
+.provider-model-suggest {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 40;
+  min-width: 260px;
+  max-width: 420px;
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border, rgba(0, 0, 0, 0.12));
+  background: var(--bg-elevated, #1b1b20);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.32);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.provider-model-suggest-item {
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+/* Hover and keyboard navigation share one highlight, so the two can never
+   disagree about which row Enter will commit. */
+.provider-model-suggest-item:hover,
+.provider-model-suggest-item.active {
+  background: color-mix(in srgb, var(--accent, #6366f1) 26%, transparent);
 }
 
 /* Inline add + "+N more" — filled ghost pills (no dashed stroke) that read as

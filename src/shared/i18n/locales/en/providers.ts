@@ -50,6 +50,18 @@ export default {
     contextWindowPlaceholder: "Auto",
     contextWindowHint:
       "Shared across every provider serving this model. Leave blank to auto-detect.",
+    fetchAll: "Fetch all",
+    fetching: "Fetching…",
+    fetchAdded: "Added {{count}}",
+    fetchNone: "No new models",
+    fetchFailed: "Couldn't reach the provider",
+    fetchFound: "{{count}} available",
+    removeAll: "Remove all",
+    removeAllHint: "Remove all {{count}} models listed under this provider",
+    removedAll: "Removed {{count}}",
+    removeFailed: "Couldn't remove the models",
+    editModel: "Edit {{model}}",
+    contextShort: "{{tokens}} ctx",
   },
   oauth: {
     sectionTitle: "Subscription / OAuth Plans",

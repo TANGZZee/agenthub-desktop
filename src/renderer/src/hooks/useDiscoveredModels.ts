@@ -16,6 +16,10 @@ export interface UseDiscoveredModelsArgs {
   // reading the matching <NAME>_API_KEY from the profile's .env.
   apiKey?: string;
   profile?: string;
+  // Display name of a *named* custom provider. Two such providers may share
+  // one base URL while serving different catalogues behind different keys;
+  // the label keeps their discovery results (and API keys) distinct.
+  providerLabel?: string;
   // When true the hook is paused — used so the Providers page only fires
   // after the user has finished switching providers, and so the Models
   // modal doesn't fire before it's even open.
@@ -48,6 +52,7 @@ export function useDiscoveredModels(
     baseUrl,
     apiKey,
     profile,
+    providerLabel,
     enabled = true,
     refreshToken,
   } = args;
@@ -74,6 +79,7 @@ export function useDiscoveredModels(
           baseUrl,
           apiKey,
           profile,
+          providerLabel,
         );
         if (seq !== cancelRef.current) return; // a later call superseded us
         setModels(result.models);
@@ -91,7 +97,7 @@ export function useDiscoveredModels(
     return (): void => {
       clearTimeout(handle);
     };
-  }, [enabled, provider, baseUrl, apiKey, profile, refreshToken]);
+  }, [enabled, provider, baseUrl, apiKey, profile, providerLabel, refreshToken]);
 
   return { models, status, cached, freeModels };
 }

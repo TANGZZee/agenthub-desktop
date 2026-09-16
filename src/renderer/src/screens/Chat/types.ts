@@ -112,8 +112,16 @@ export interface ActiveTurn {
 }
 
 export interface ModelGroup {
+  /** Brand id used for the provider logo (e.g. "openrouter", or "custom"
+   *  for OpenAI-compatible endpoints not in the known-brand table). */
   provider: string;
+  /** Display label for the group header / row subtitle. */
   providerLabel: string;
+  /** Unique identity for this group. Distinct from `provider` because two
+   *  *named* custom providers can share the generic "custom" brand while
+   *  serving different catalogues — keying the rail by brand alone would
+   *  merge them into one indistinguishable entry. */
+  groupKey: string;
   models: {
     provider: string;
     model: string;

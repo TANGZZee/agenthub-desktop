@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Download,
   Globe,
   KeyRound,
   Loader2,
@@ -7,6 +8,7 @@ import {
   Plus,
   Search,
   Tag,
+  Trash2,
   X,
 } from "lucide-react";
 import type { FieldDef } from "../constants";
@@ -50,6 +52,19 @@ interface LibModel {
 // deciding whether a saved `custom` model belongs to a given endpoint).
 const normUrl = (u: string): string =>
   (u || "").trim().replace(/\/+$/, "").toLowerCase();
+
+/** Compact context-window label for a model chip (128000 → "128K"). */
+function formatContextShort(tokens: number): string {
+  if (tokens >= 1_000_000) {
+    const m = tokens / 1_000_000;
+    return `${Number.isInteger(m) ? m : m.toFixed(1)}M`;
+  }
+  if (tokens >= 1000) {
+    const k = tokens / 1000;
+    return `${Number.isInteger(k) ? k : k.toFixed(1)}K`;
+  }
+  return String(tokens);
+}
 
 // Host of a base URL, used as a fallback custom-provider title (raw URL if
 // unparseable).
@@ -151,9 +166,17 @@ function ProviderModelsManager({
   const [loading, setLoading] = useState(true);
   const [modelId, setModelId] = useState("");
   const [busy, setBusy] = useState(false);
+  // Transient outcome line for the bulk "Fetch all" action.
+  const [fetchNote, setFetchNote] = useState<string | null>(null);
   // The add-input is revealed by the "+ Add model ID" pill; hidden by default
   // so the models row stays compact.
   const [adding, setAdding] = useState(false);
+  // Autocomplete for the add-input. A native `<datalist>` popup is drawn by
+  // the browser and cannot be height-limited or scrolled, so a provider with a
+  // long catalogue produced a list that ran off-screen and could not be
+  // scrolled. This state drives an in-page list instead.
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [suggestIndex, setSuggestIndex] = useState(-1);
   // Only the first N models render by default; the rest collapse behind a
   // "+N more" toggle so a provider with a long catalog doesn't flood the modal.
   const [showAllModels, setShowAllModels] = useState(false);
@@ -200,14 +223,16 @@ function ProviderModelsManager({
   );
 
   // Live model discovery drives the add-input's autocomplete. Custom endpoints
-  // need the base URL; native providers resolve their list by id.
+  // need the base URL; native providers resolve their list by id. The provider
+  // *label* is passed for named custom providers so two of them sharing one
+  // base URL don't share a cache entry (and each reads its own API key).
   const discovery = useDiscoveredModels({
     provider: route.provider,
     baseUrl: route.provider === "custom" ? route.baseUrl : undefined,
     apiKey: apiKey || undefined,
+    providerLabel,
     enabled: true,
   });
-  const listId = `provider-models-${envKey || normUrl(route.baseUrl) || "custom"}`;
 
   async function add(): Promise<void> {
     const model = modelId.trim();
@@ -233,6 +258,107 @@ function ProviderModelsManager({
   async function remove(id: string): Promise<void> {
     await window.hermesAPI.removeModel(id);
     await reload();
+  }
+
+  /** Model ids the provider advertises that aren't in the library yet. */
+  const fetchable = useMemo(() => {
+    const saved = new Set(models.map((m) => m.model));
+    return discovery.models.filter((id) => !saved.has(id));
+  }, [models, discovery.models]);
+
+  /** Autocomplete candidates for the add-input, filtered by what's typed. */
+  const suggestions = useMemo(() => {
+    const query = modelId.trim().toLowerCase();
+    const pool = discovery.models;
+    const matches = query
+      ? pool.filter((id) => id.toLowerCase().includes(query))
+      : pool;
+    // A long catalogue must stay navigable, but the list is scrollable, so
+    // this bound only keeps the DOM small.
+    return matches.slice(0, 200);
+  }, [discovery.models, modelId]);
+
+  // Bulk-import every discovered-but-unsaved model. Persists through the same
+  // `addModel` path as the single add-input (so routing, providerLabel and
+  // dedup are identical), then reloads once instead of per model.
+  async function fetchAll(): Promise<void> {
+    if (busy || fetchable.length === 0) return;
+    setBusy(true);
+    setFetchNote(null);
+    try {
+      for (const id of fetchable) {
+        await window.hermesAPI.addModel(
+          id,
+          route.provider,
+          id,
+          route.baseUrl,
+          undefined,
+          providerLabel,
+        );
+      }
+      setFetchNote(t("providers.models.fetchAdded", { count: fetchable.length }));
+      await reload();
+    } catch {
+      setFetchNote(t("providers.models.fetchFailed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Bulk-remove every model currently listed under this provider. The mirror
+  // of `fetchAll`: a catalogue imported in one click must be removable in one
+  // click, or a mistyped endpoint leaves hundreds of rows behind.
+  async function removeAll(): Promise<void> {
+    if (busy || models.length === 0) return;
+    setBusy(true);
+    setFetchNote(null);
+    const count = models.length;
+    try {
+      for (const m of models) {
+        await window.hermesAPI.removeModel(m.id);
+      }
+      setFetchNote(t("providers.models.removedAll", { count }));
+      await reload();
+    } catch {
+      setFetchNote(t("providers.models.removeFailed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /** Commit the currently highlighted suggestion, if any. */
+  function commitSuggestion(): boolean {
+    if (!suggestOpen || suggestIndex < 0 || suggestIndex >= suggestions.length) {
+      return false;
+    }
+    const picked = suggestions[suggestIndex];
+    setSuggestOpen(false);
+    setSuggestIndex(-1);
+    // Reuse `add()` by way of state so the persistence path stays identical.
+    void addModelById(picked);
+    return true;
+  }
+
+  /** Persist one model id through the shared add path. */
+  async function addModelById(id: string): Promise<void> {
+    const trimmed = id.trim();
+    if (!trimmed || busy) return;
+    setBusy(true);
+    try {
+      await window.hermesAPI.addModel(
+        trimmed,
+        route.provider,
+        trimmed,
+        route.baseUrl,
+        undefined,
+        providerLabel,
+      );
+      setModelId("");
+      setAdding(false);
+      await reload();
+    } finally {
+      setBusy(false);
+    }
   }
 
   function openEditor(m: LibModel): void {
@@ -325,9 +451,30 @@ function ProviderModelsManager({
                     type="button"
                     className="provider-model-chip-label"
                     onClick={() => openEditor(m)}
-                    title={t("common.edit")}
+                    title={t("providers.models.editModel", { model: m.model })}
                   >
                     {m.model}
+                    {/* Show the context window inline: it was previously only
+                        in the tooltip, so a configured value was invisible. */}
+                    {m.contextLength ? (
+                      <span className="provider-model-chip-ctx">
+                        {formatContextShort(m.contextLength)}
+                      </span>
+                    ) : null}
+                  </button>
+                  {/* Explicit edit affordance. The label has always been
+                      clickable, but nothing signalled it, so the editor was
+                      effectively undiscoverable. */}
+                  <button
+                    type="button"
+                    className="provider-model-chip-edit"
+                    onClick={() => openEditor(m)}
+                    aria-label={t("providers.models.editModel", {
+                      model: m.model,
+                    })}
+                    title={t("providers.models.editModel", { model: m.model })}
+                  >
+                    <Pencil size={12} />
                   </button>
                   <button
                     type="button"
@@ -367,41 +514,79 @@ function ProviderModelsManager({
               <span className="provider-model-chip provider-model-chip-input">
                 <input
                   className="provider-model-add-input"
-                  list={listId}
                   autoFocus
                   value={modelId}
                   // Model IDs never contain whitespace — strip it as typed/
                   // pasted so "hello there" can't be saved as a bogus model.
-                  onChange={(e) =>
-                    setModelId(e.target.value.replace(/\s+/g, ""))
-                  }
+                  onChange={(e) => {
+                    setModelId(e.target.value.replace(/\s+/g, ""));
+                    setSuggestOpen(true);
+                    setSuggestIndex(-1);
+                  }}
+                  onFocus={() => setSuggestOpen(true)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") {
+                    if (e.key === "ArrowDown") {
                       e.preventDefault();
-                      void add();
+                      setSuggestOpen(true);
+                      setSuggestIndex((i) =>
+                        Math.min(i + 1, suggestions.length - 1),
+                      );
+                    } else if (e.key === "ArrowUp") {
+                      e.preventDefault();
+                      setSuggestIndex((i) => Math.max(i - 1, -1));
+                    } else if (e.key === "Enter") {
+                      e.preventDefault();
+                      // Enter takes the highlighted suggestion when the list is
+                      // open; otherwise it commits what was typed.
+                      if (!commitSuggestion()) void add();
                     } else if (e.key === "Escape") {
+                      if (suggestOpen) {
+                        // First Escape closes the list; a second one collapses
+                        // the input, so a typo never discards the field.
+                        setSuggestOpen(false);
+                        return;
+                      }
                       setModelId("");
                       setAdding(false);
                     }
                   }}
                   onBlur={() => {
-                    // Commit a typed id on blur; otherwise collapse the input.
-                    if (modelId.trim()) void add();
-                    else setAdding(false);
+                    // Delay so a click on a suggestion lands before the list
+                    // unmounts; otherwise the click has no target.
+                    window.setTimeout(() => setSuggestOpen(false), 120);
                   }}
                   placeholder={t("providers.models.addModelId")}
                 />
-                <datalist id={listId}>
-                  {discovery.models.map((mm) => (
-                    <option key={mm} value={mm} />
-                  ))}
-                </datalist>
                 {busy && (
                   <Loader2
                     size={13}
                     className="spin provider-model-chip-busy"
                     aria-hidden
                   />
+                )}
+                {suggestOpen && suggestions.length > 0 && (
+                  <div className="provider-model-suggest" role="listbox">
+                    {suggestions.map((id, i) => (
+                      <button
+                        key={id}
+                        type="button"
+                        role="option"
+                        aria-selected={i === suggestIndex}
+                        className={`provider-model-suggest-item ${
+                          i === suggestIndex ? "active" : ""
+                        }`}
+                        // `onMouseDown` (not click) so the pick wins the race
+                        // with the input's blur handler.
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          void addModelById(id);
+                        }}
+                        onMouseEnter={() => setSuggestIndex(i)}
+                      >
+                        {id}
+                      </button>
+                    ))}
+                  </div>
                 )}
               </span>
             ) : (
@@ -413,6 +598,65 @@ function ProviderModelsManager({
                 <Plus size={13} aria-hidden />
                 {t("providers.models.addModelId")}
               </button>
+            )}
+
+            {/* Bulk import: a provider's whole /models list in one click.
+                Deliberately NOT gated on `!adding`: an earlier version hid it
+                while the add-input was open, so it appeared to "show up after
+                you pick a model" — the field closing was what revealed it.
+                Keeping it mounted means the two bulk actions stay in a stable
+                place instead of appearing to move around. */}
+            {discovery.models.length > 0 && (
+              <button
+                type="button"
+                className="provider-model-add-pill provider-model-fetch-pill"
+                onClick={() => void fetchAll()}
+                disabled={busy || fetchable.length === 0}
+                title={
+                  fetchable.length > 0
+                    ? t("providers.models.fetchFound", {
+                        count: fetchable.length,
+                      })
+                    : t("providers.models.fetchNone")
+                }
+              >
+                {busy ? (
+                  <Loader2 size={13} className="spin" aria-hidden />
+                ) : (
+                  <Download size={13} aria-hidden />
+                )}
+                {busy
+                  ? t("providers.models.fetching")
+                  : fetchable.length > 0
+                    ? `${t("providers.models.fetchAll")} (${fetchable.length})`
+                    : t("providers.models.fetchAll")}
+              </button>
+            )}
+
+            {/* Bulk remove: the mirror of Fetch all, so a catalogue imported
+                in one click can be undone in one click. Only offered when this
+                provider actually has models listed. Also left ungated on
+                `adding` so both bulk actions keep a stable position. */}
+            {models.length > 0 && (
+              <button
+                type="button"
+                className="provider-model-add-pill provider-model-remove-pill"
+                onClick={() => void removeAll()}
+                disabled={busy}
+                title={t("providers.models.removeAllHint", {
+                  count: models.length,
+                })}
+              >
+                {busy ? (
+                  <Loader2 size={13} className="spin" aria-hidden />
+                ) : (
+                  <Trash2 size={13} aria-hidden />
+                )}
+                {t("providers.models.removeAll")} ({models.length})
+              </button>
+            )}
+            {!adding && fetchNote && (
+              <span className="provider-models-hint">{fetchNote}</span>
             )}
           </div>
         )}

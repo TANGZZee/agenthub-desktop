@@ -48,6 +48,7 @@ import type {
   AgentHubModelOption,
   WorkerMarketStatus,
   WorkerMarketRefreshResult,
+  AgentActivitySnapshot,
 } from "../shared/agenthub";
 
 /**
@@ -647,6 +648,7 @@ const hermesAPI = {
     baseUrl?: string,
     apiKey?: string,
     profile?: string,
+    providerLabel?: string,
   ): Promise<{
     models: string[];
     status: "ok" | "no-key" | "error" | "unsupported" | "unknown-host";
@@ -662,6 +664,7 @@ const hermesAPI = {
       baseUrl,
       apiKey,
       profile,
+      providerLabel,
     ),
 
   getModelContextWindow: (
@@ -1866,6 +1869,10 @@ const hermesAPI = {
     ipcRenderer.invoke("agenthub-market-status"),
   agenthubMarketRefresh: (): Promise<WorkerMarketRefreshResult> =>
     ipcRenderer.invoke("agenthub-market-refresh"),
+  // Office activity: roster (who exists) joined with per-agent journal detail
+  // (what each one is doing right now).
+  agenthubOfficeActivity: (): Promise<AgentActivitySnapshot[]> =>
+    ipcRenderer.invoke("agenthub-office-activity"),
   onAgenthubWorkerChanged: (callback: () => void): (() => void) => {
     const handler = (): void => callback();
     ipcRenderer.on("agenthub-worker-changed", handler);

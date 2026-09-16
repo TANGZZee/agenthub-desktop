@@ -22,6 +22,8 @@ interface SavedModel {
   model: string;
   baseUrl: string;
   createdAt: number;
+  /** Named custom provider. Absent for native providers. */
+  providerLabel?: string;
 }
 
 function Harness(): React.JSX.Element {
@@ -150,6 +152,54 @@ describe("useModelConfig", () => {
         model: "hermesone-swift",
         provider: "custom",
       });
+    });
+  });
+
+  // Regression: two *named* custom providers may share one base URL while
+  // serving different catalogues. Grouping by brand alone collapsed both into
+  // the generic "custom" bucket, so two identically-named models were rendered
+  // as indistinguishable rows. The named label now drives the group identity,
+  // while `provider`/`baseUrl` still carry the routing.
+  it("separates two named custom providers that share one base URL", async () => {
+    const shared = "https://gateway.example.com/v1";
+    savedModels = [
+      {
+        id: "a-gpt4o",
+        name: "gpt-4o",
+        provider: "custom",
+        model: "gpt-4o",
+        baseUrl: shared,
+        createdAt: 1,
+        providerLabel: "Provider A",
+      },
+      {
+        id: "b-gpt4o",
+        name: "gpt-4o",
+        provider: "custom",
+        model: "gpt-4o",
+        baseUrl: shared,
+        createdAt: 2,
+        providerLabel: "Provider B",
+      },
+    ];
+
+    render(<GroupHarness />);
+
+    await waitFor(() => {
+      const groups = JSON.parse(
+        screen.getByTestId("groups").textContent || "[]",
+      );
+      const labels = groups.map((g: { label: string }) => g.label);
+      // Two distinct entries named after the providers, not one "custom" blob.
+      expect(labels).toContain("Provider A");
+      expect(labels).toContain("Provider B");
+
+      const a = groups.find((g: { label: string }) => g.label === "Provider A");
+      const b = groups.find((g: { label: string }) => g.label === "Provider B");
+      // Each keeps its own single model, and both still route via `custom` +
+      // the shared base URL.
+      expect(a.models).toEqual([{ model: "gpt-4o", provider: "custom" }]);
+      expect(b.models).toEqual([{ model: "gpt-4o", provider: "custom" }]);
     });
   });
 });
